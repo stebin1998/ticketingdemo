@@ -12,12 +12,16 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
-    const handleEmailLogin = async () => {
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            navigate("/demo");
-        } catch (err) {
-            alert(err.message);
+    const handleEmailLogin = async (e) => {
+        // Added a feature that triggers this login handler when user presses enter after typing their password
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                navigate("/demo");
+            } catch (err) {
+                alert(err.message);
+            }
         }
     };
 
@@ -78,6 +82,7 @@ const Login = () => {
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                onKeyDown={handleEmailLogin}
                                 className="w-full px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-950"
                             />
                             <button

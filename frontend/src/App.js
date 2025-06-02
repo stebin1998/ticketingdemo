@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Demo from './pages/Demo';
+import CreateEventPage from './pages/CreateEvent';
 import './index.css';
 
 // Animation variants
@@ -83,7 +84,22 @@ const AnimatedRoutes = () => {
             </motion.div>
           }
         />
+        <Route
+          path="/createEvent"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <CreateEventPage />
+            </motion.div>
+          }
+        />
       </Routes>
+      
     </AnimatePresence>
   );
 };

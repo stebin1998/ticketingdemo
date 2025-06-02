@@ -10,9 +10,9 @@ function Navbar() {
                     <Link to="/login" className="hover:text-gray-200 font-medium cursor-pointer">
                         Seller
                     </Link>
-                    <span className="hover:text-gray-200 font-medium cursor-pointer">
-                        Buyer
-                    </span>
+                    <Link to="/createEvent" className="hover:text-gray-200 font-medium cursor-pointer">
+                        Create Event                    
+                    </Link>
                 </div>
             </div>
         </nav>

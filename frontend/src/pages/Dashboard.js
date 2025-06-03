@@ -5,7 +5,6 @@ import {
   faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
   faExclamationCircle, faImage
 } from '@fortawesome/free-solid-svg-icons';
-import debounce from 'lodash.debounce';
 import ErrorBoundary from '../components/ErrorBoundary';
 import EventCardSkeleton from '../components/EventCardSkeleton';
 import FeaturedEvent from '../components/FeaturedEvent';
@@ -62,10 +61,9 @@ const Dashboard = () => {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  const handleSearchChange = useCallback(
-    debounce((value) => setSearchQuery(value), 300),
-    []
-  );
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+  };
 
   const filteredEvents = useMemo(() => {
     return events.filter(event => {

@@ -13,7 +13,6 @@ const Login = () => {
     const navigate = useNavigate();
 
     const handleEmailLogin = async (e) => {
-        // Added a feature that triggers this login handler when user presses enter after typing their password
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();            
             try {
@@ -51,21 +50,24 @@ const Login = () => {
         }
     };
 
-
     return (
         <div
             className="flex items-center justify-center min-h-screen bg-cover bg-center"
             style={{ backgroundImage: `url(${backgroundImage})` }}
         >
-            <div className="flex border-[10px] border-white rounded-3xl w-full max-w-6xl min-h-[600px] p-5 bg-white shadow-2xl">
-                <div className="w-1/2 bg-blue-950 text-white rounded-3xl flex flex-col justify-center items-center p-10">
-                    <h2 className="text-4xl font-extrabold mb-4">Welcome to Playmi</h2>
-                    <p className="text-lg text-blue-100">
-                        Manage your tickets, explore new experiences, and stay connected with ease.
-                    </p>
+            <div className="flex flex-col md:flex-row border-[10px] border-white rounded-3xl w-full max-w-6xl min-h-[600px] p-5 bg-white shadow-2xl">
+                {/* Left side - Welcome message */}
+                <div className="md:w-1/2 w-full bg-blue-950 text-white rounded-3xl flex items-center justify-center p-10">
+                    <div className="text-center">
+                        <h2 className="text-4xl font-extrabold mb-4">Welcome to Playmi</h2>
+                        <p className="text-lg text-blue-100">
+                            Manage your tickets, explore new experiences, and stay connected with ease.
+                        </p>
+                    </div>
                 </div>
 
-                <div className="w-1/2 p-20 text-center">
+                {/* Right side - Login form */}
+                <div className="md:w-1/2 w-full p-10 text-center">
                     <h2 className="text-3xl font-bold mb-6 text-gray-800">Login</h2>
 
                     <div className="space-y-4">
@@ -140,7 +142,6 @@ const Login = () => {
                         </Link>
                     </div>
                 </div>
-
             </div>
         </div>
     );

@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
-export default function TagsInput() {
-  const [tags, setTags] = useState([]);
+export default function TagsInput({ tags, onChange }) {
   const [input, setInput] = useState('');
   const inputRef = useRef();
 
@@ -10,17 +9,17 @@ export default function TagsInput() {
       e.preventDefault();
       const newTag = input.trim().replace(/,$/, '');
       if (!tags.includes(newTag)) {
-        setTags([...tags, newTag]);
+        onChange([...tags, newTag]); // Use parent-provided onChange
       }
       setInput('');
     } else if (e.key === 'Backspace' && input === '' && tags.length > 0) {
       e.preventDefault();
-      setTags((prev) => prev.slice(0, -1));
+      onChange(tags.slice(0, -1)); // Remove last tag
     }
   };
 
   const removeTag = (index) => {
-    setTags(tags.filter((_, i) => i !== index));
+    onChange(tags.filter((_, i) => i !== index)); // Remove by index
   };
 
   return (
@@ -42,7 +41,6 @@ export default function TagsInput() {
             </button>
           </span>
         ))}
-        {/* Wrap input in a fixed-width container to avoid shrinkage */}
         <div className="shrink-0">
           <input
             ref={inputRef}

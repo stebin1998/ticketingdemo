@@ -12,6 +12,9 @@ const PORT = process.env.PORT || 4556;
 app.use(cors());
 app.use(express.json());
 
+// Debug print for MONGO_URI
+console.log('MONGO_URI:', process.env.MONGO_URI);
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,

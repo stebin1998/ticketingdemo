@@ -209,21 +209,38 @@ export default function CreateEventPage() {
     // Submit / Save Draft Handlers
     const handleSubmit = async (draft = false) => {
         try {
+            // Debug log for eventSlots
+            console.log('eventSlots state:', eventSlots);
+
+            // Ensure at least one slot exists
+            if (eventSlots.length === 0) {
+                setEventSlots([{ startDate: '', startTime: '', endDate: '', endTime: '' }]);
+                throw new Error('At least one event slot is required');
+            }
+
+            // Validate first event slot
+            const firstSlot = eventSlots[0];
+            if (!firstSlot.startDate || !firstSlot.startTime || !firstSlot.endDate || !firstSlot.endTime) {
+                throw new Error('Please fill in all date and time fields for the event');
+            }
+
+            // Format dates to ISO strings
+            const formattedSlots = eventSlots.map(slot => ({
+                ...slot,
+                startDate: slot.startDate ? new Date(slot.startDate).toISOString() : undefined,
+                endDate: slot.endDate ? new Date(slot.endDate).toISOString() : undefined
+            }));
+
             const payload = {
                 name: details.name,
                 description: details.description,
-                genre: details.category,  // Assuming `details.category` is your "genre"
+                genre: details.category,
                 tags: details.tags,
                 location: details.location,
                 files: [], 
                 dateTimes: {
                     isMultiDate,
-                    eventSlots,
-                    // Include these if using single-date mode
-                    // singleStartDate: '',
-                    // singleStartTime: '',
-                    // singleEndDate: '',
-                    // singleEndTime: '',
+                    eventSlots: formattedSlots
                 },
                 ticketTiers: tiers,
                 discountCodes: codes,
@@ -234,7 +251,7 @@ export default function CreateEventPage() {
                 organizerContact: organizer,
             };
 
-            console.log("Submitting payload:", payload);
+            console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
             const response = await fetch('http://localhost:4556/events', {
                 method: 'POST',
@@ -482,16 +499,12 @@ export default function CreateEventPage() {
                                                         <Input
                                                             type="date"
                                                             value={slot.startDate}
-                                                            onChange={(e) =>
-                                                                updateSlot(index, "startDate", e.target.value)
-                                                            }
+                                                            onChange={(e) => updateSlot(index, "startDate", e.target.value)}
                                                         />
                                                         <Input
                                                             type="time"
                                                             value={slot.startTime}
-                                                            onChange={(e) =>
-                                                                updateSlot(index, "startTime", e.target.value)
-                                                            }
+                                                            onChange={(e) => updateSlot(index, "startTime", e.target.value)}
                                                         />
                                                     </div>
                                                     <div className="flex flex-col gap-2">
@@ -499,16 +512,12 @@ export default function CreateEventPage() {
                                                         <Input
                                                             type="date"
                                                             value={slot.endDate}
-                                                            onChange={(e) =>
-                                                                updateSlot(index, "endDate", e.target.value)
-                                                            }
+                                                            onChange={(e) => updateSlot(index, "endDate", e.target.value)}
                                                         />
                                                         <Input
                                                             type="time"
                                                             value={slot.endTime}
-                                                            onChange={(e) =>
-                                                                updateSlot(index, "endTime", e.target.value)
-                                                            }
+                                                            onChange={(e) => updateSlot(index, "endTime", e.target.value)}
                                                         />
                                                     </div>
                                                     <button
@@ -535,25 +544,44 @@ export default function CreateEventPage() {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <h4 className="text-sm text-gray-500 mb-1">Start</h4>
-                                                        <Input type="date" placeholder="Start Date" />
+                                                        <Input
+                                                            type="date"
+                                                            placeholder="Start Date"
+                                                            value={eventSlots[0]?.startDate || ''}
+                                                            onChange={e => updateSlot(0, 'startDate', e.target.value)}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <h4 className="text-sm text-gray-500 mb-1">End</h4>
-                                                        <Input type="date" placeholder="End Date" />
+                                                        <Input
+                                                            type="date"
+                                                            placeholder="End Date"
+                                                            value={eventSlots[0]?.endDate || ''}
+                                                            onChange={e => updateSlot(0, 'endDate', e.target.value)}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div className="flex flex-col">
                                                 <h3 className="mb-1">Time</h3>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <h4 className="text-sm text-gray-500 mb-1">Start</h4>
-                                                        <Input type="time" placeholder="Start Time" />
+                                                        <Input
+                                                            type="time"
+                                                            placeholder="Start Time"
+                                                            value={eventSlots[0]?.startTime || ''}
+                                                            onChange={e => updateSlot(0, 'startTime', e.target.value)}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <h4 className="text-sm text-gray-500 mb-1">End</h4>
-                                                        <Input type="time" placeholder="End Time" />
+                                                        <Input
+                                                            type="time"
+                                                            placeholder="End Time"
+                                                            value={eventSlots[0]?.endTime || ''}
+                                                            onChange={e => updateSlot(0, 'endTime', e.target.value)}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>

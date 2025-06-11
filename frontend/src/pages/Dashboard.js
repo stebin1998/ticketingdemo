@@ -23,37 +23,30 @@ const Dashboard = () => {
     setIsLoading(true);
     setError(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const mockEvents = [
-        {
-          id: 1,
-          title: "Summer Music Festival",
-          date: "2023-07-15T19:00:00",
-          location: "Toronto Waterfront",
-          price: 49.99,
-          organizer: "Music Inc.",
-          image: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4",
-          isFeatured: true,
-          description: "3 days of music!",
-          category: "music",
-          status: "featured"
-        },
-        ...Array.from({ length: 10 }, (_, i) => ({
-          id: i + 2,
-          title: `Event ${i + 2}`,
-          date: new Date(Date.now() + i * 86400000).toISOString(),
-          location: ["Toronto", "Vancouver", "Montreal"][i % 3],
-          price: Math.floor(Math.random() * 100) + 10,
-          organizer: `Organizer ${i + 1}`,
-          image: i % 2 === 0 ? `https://picsum.photos/seed/event${i}/300/200` : '',
-          description: `Description for event ${i + 2}`,
-          category: ["music", "art", "food", "sports"][i % 4],
-          status: ["featured", "upcoming", "discover"][i % 3],
-        })),
-      ];
-      setEvents(mockEvents);
+      const response = await fetch('http://localhost:4556/events');
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+      const data = await response.json();
+      
+      // Transform the data to match our EventCard component's expected format
+      const transformedEvents = data.map(event => ({
+        id: event._id,
+        title: event.name,
+        date: event.dateTimes?.eventSlots?.[0]?.startDate || new Date().toISOString(),
+        location: `${event.location?.venueName || ''}, ${event.location?.city || ''}`,
+        price: event.ticketTiers?.[0]?.price || 0,
+        organizer: event.organizerContact?.name || 'Unknown',
+        image: event.files?.[0] || '',
+        description: event.description,
+        category: event.genre,
+        status: event.eventSettings?.publishStatus || 'published'
+      }));
+      
+      setEvents(transformedEvents);
     } catch (err) {
       setError("Failed to load events. Please try again.");
+      console.error('Error fetching events:', err);
     } finally {
       setIsLoading(false);
     }

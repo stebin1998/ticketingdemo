@@ -6,9 +6,9 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Demo from './pages/Demo';
 import CreateEventPage from './pages/CreateEvent';
+import Profile from './pages/Profile';
 import './index.css';
 
-// Animation variants
 const pageVariants = {
   initial: { opacity: 0, x: 50 },
   in: { opacity: 1, x: 0 },
@@ -21,7 +21,6 @@ const pageTransition = {
   duration: 0.5,
 };
 
-// Route wrapper with animation
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -98,8 +97,21 @@ const AnimatedRoutes = () => {
             </motion.div>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <Profile />
+            </motion.div>
+          }
+        />
       </Routes>
-      
     </AnimatePresence>
   );
 };

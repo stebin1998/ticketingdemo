@@ -197,14 +197,8 @@ export default function CreateEventPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [sections]);
 
-
-
-
-
-
-
-
-
+    // Image upload state
+    const [uploadedImages, setUploadedImages] = useState([]);
 
     // Submit / Save Draft Handlers
     const handleSubmit = async (draft = false) => {
@@ -237,7 +231,7 @@ export default function CreateEventPage() {
                 genre: details.category,
                 tags: details.tags,
                 location: details.location,
-                files: [], 
+                files: uploadedImages,
                 dateTimes: {
                     isMultiDate,
                     eventSlots: formattedSlots
@@ -470,7 +464,7 @@ export default function CreateEventPage() {
                                         </div>
                                     </div>
 
-                                    <FileUpload />
+                                    <FileUpload onUpload={url => setUploadedImages([url])} />
                                 </div>
 
                                 {/* Date & Time */}

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Demo from './pages/Demo';
 import CreateEventPage from './pages/CreateEvent';
 import Profile from './pages/Profile';
+import Cart from './pages/Cart';
 import './index.css';
 
 const pageVariants = {
@@ -108,6 +109,20 @@ const AnimatedRoutes = () => {
               transition={pageTransition}
             >
               <Profile />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <Cart />
             </motion.div>
           }
         />

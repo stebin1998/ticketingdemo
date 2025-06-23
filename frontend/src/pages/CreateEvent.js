@@ -12,8 +12,10 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import Footer from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateEventPage() {
+    const navigate = useNavigate();
 
     // Event Details
     const [details, setDetails] = useState({
@@ -240,12 +242,12 @@ export default function CreateEventPage() {
                 discountCodes: codes,
                 eventSettings: {
                     ...policy,
-                    publishStatus: draft ? 'draft' : 'published',
+                    publishStatus: 'draft' ,
                 },
                 organizerContact: organizer,
             };
 
-            console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+
 
             const response = await fetch('http://localhost:4556/events', {
                 method: 'POST',
@@ -258,7 +260,13 @@ export default function CreateEventPage() {
                 throw new Error(error || 'Failed to save event.');
             }
 
-            alert(draft ? 'Draft saved successfully!' : 'Event submitted successfully!');
+
+
+            const createdEvent = await response.json();
+
+
+            navigate(`/event-results/${createdEvent._id}`);
+
         } catch (error) {
             alert(error.message);
         }
@@ -868,16 +876,7 @@ export default function CreateEventPage() {
                                     </SelectContent>
                                 </Select>
 
-                                <Select
-                                    value={policy.status}
-                                    onValueChange={(value) => updatePolicy('status', value)}
-                                >
-                                    <SelectTrigger>{policy.status}</SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                        <SelectItem value="published">Published</SelectItem>
-                                    </SelectContent>
-                                </Select>
+
                             </CardContent>
                         </Card>
                         <h1 id="organizer-contact" className="text-2xl font-bold">Organizer Contact</h1>
@@ -911,10 +910,8 @@ export default function CreateEventPage() {
                             </CardContent>
                         </Card>
                         <div className='flex space-x-4 '>
-                            <Button variant="secondary" onClick={() => handleSubmit(true)}>
-                                Save Draft
-                            </Button>
-                            <Button onClick={() => handleSubmit(false)}>Submit</Button>
+                           
+                            <Button onClick={() => handleSubmit(false)}>Review</Button>
                         </div>
 
                     </div>

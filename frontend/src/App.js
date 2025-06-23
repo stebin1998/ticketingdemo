@@ -8,6 +8,9 @@ import Demo from './pages/Demo';
 import CreateEventPage from './pages/CreateEvent';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
+import EventResults from './pages/EventResult';
+import MyEvents from './pages/MyEvents';
+import EditEvent from './pages/EditEvent';
 import './index.css';
 
 const pageVariants = {
@@ -95,6 +98,49 @@ const AnimatedRoutes = () => {
               transition={pageTransition}
             >
               <CreateEventPage />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/my-events"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <MyEvents />
+            </motion.div>
+          }
+        />
+
+        <Route
+          path="/edit-event/:id"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <EditEvent />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/event-results/:eventId"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <EventResults />
             </motion.div>
           }
         />

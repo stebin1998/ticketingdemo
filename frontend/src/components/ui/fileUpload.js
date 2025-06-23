@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import AuthService from '../../utils/authService';
 
 function FileUpload({ onUpload }) {
     const [fileName, setFileName] = useState('');
@@ -10,8 +11,13 @@ function FileUpload({ onUpload }) {
         formData.append('image', file);
         setUploading(true);
         try {
+            // Get auth token for file upload
+            const token = await AuthService.getAuthToken();
             const response = await fetch('http://localhost:4556/upload', {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData,
             });
             const data = await response.json();

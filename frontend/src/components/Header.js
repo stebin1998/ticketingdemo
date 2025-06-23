@@ -1,13 +1,41 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faMapMarkerAlt, faChevronDown, faPlus, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faMapMarkerAlt, faChevronDown, faPlus, faBars, faTimes, faUser, faSignOutAlt, faCog } from '@fortawesome/free-solid-svg-icons';
 import TicketMiLogo from '../assets/ticketmi-logo.png';
+import { useAuth } from '../hooks/useAuth';
 
 const Header = ({ searchQuery, onSearchChange, locationFilter, onLocationChange }) => {
+  const navigate = useNavigate();
+  const { canCreateEvents, isAuthenticated, logout, userInfo, profile } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const options = ["All Locations", "Toronto", "Vancouver", "Montreal"];
+
+  const handleCreateEventClick = (e) => {
+    e.preventDefault();
+    if (canCreateEvents()) {
+      // User is already a seller - go to create event
+      navigate('/createEvent');
+    } else if (isAuthenticated) {
+      // User is logged in but not a seller - redirect to upgrade
+      navigate('/upgrade-to-seller?redirect=/create-event');
+    } else {
+      // User is not logged in - redirect to seller signup
+      navigate('/seller-signup');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsUserMenuOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 w-full">
@@ -63,18 +91,56 @@ const Header = ({ searchQuery, onSearchChange, locationFilter, onLocationChange 
 
         {/* Desktop Nav Buttons */}
         <div className="hidden md:flex space-x-3">
-          <Link
-            to="/createEvent"
+          <button
+            onClick={handleCreateEventClick}
             className="flex items-center px-3 py-2 border border-[#2D2B8F] rounded-full text-[#2D2B8F] text-sm hover:bg-[#2D2B8F] hover:text-white transition duration-200 ease-in-out"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create Events
-          </Link>
-          <Link
-            to="/login"
-            className="px-3 py-2 border border-[#2D2B8F] rounded-full text-sm text-[#2D2B8F] hover:bg-[#2D2B8F] hover:text-white transition duration-200 ease-in-out"
-          >
-            Login
-          </Link>
+          </button>
+          
+          {isAuthenticated ? (
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center px-3 py-2 border border-[#2D2B8F] rounded-full text-[#2D2B8F] text-sm hover:bg-[#2D2B8F] hover:text-white transition duration-200 ease-in-out"
+              >
+                <FontAwesomeIcon icon={faUser} className="mr-1" />
+                {userInfo?.email?.split('@')[0] || 'User'}
+                <FontAwesomeIcon icon={faChevronDown} className="ml-1" />
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-20">
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900">{userInfo?.email}</p>
+                    <p className="text-xs text-gray-500 capitalize">{profile?.role || 'user'}</p>
+                  </div>
+                  <Link
+                    to="/profile"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    <FontAwesomeIcon icon={faCog} className="mr-2" />
+                    Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="px-3 py-2 border border-[#2D2B8F] rounded-full text-sm text-[#2D2B8F] hover:bg-[#2D2B8F] hover:text-white transition duration-200 ease-in-out"
+            >
+              Login
+            </Link>
+          )}
         </div>
 
         {/* Hamburger Icon for Mobile */}
@@ -127,12 +193,37 @@ const Header = ({ searchQuery, onSearchChange, locationFilter, onLocationChange 
             )}
           </div>
 
-          <Link to="/createEvent" className="block text-[#2D2B8F] border border-[#2D2B8F] rounded-full px-4 py-2 text-center">
+          <button 
+            onClick={handleCreateEventClick}
+            className="block w-full text-[#2D2B8F] border border-[#2D2B8F] rounded-full px-4 py-2 text-center"
+          >
             Create Events
-          </Link>
-          <Link to="/login" className="block text-[#2D2B8F] border border-[#2D2B8F] rounded-full px-4 py-2 text-center">
-            Login
-          </Link>
+          </button>
+          
+          {isAuthenticated ? (
+            <div className="space-y-2">
+              <Link 
+                to="/profile" 
+                className="block text-[#2D2B8F] border border-[#2D2B8F] rounded-full px-4 py-2 text-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Profile
+              </Link>
+              <button 
+                onClick={handleLogout}
+                className="block w-full text-red-600 border border-red-600 rounded-full px-4 py-2 text-center hover:bg-red-50"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/login" 
+              className="block text-[#2D2B8F] border border-[#2D2B8F] rounded-full px-4 py-2 text-center"
+            >
+              Login
+            </Link>
+          )}
         </div>
       )}
     </header>

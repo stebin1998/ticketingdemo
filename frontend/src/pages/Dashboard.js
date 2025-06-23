@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
+  faTicketAlt,
   faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
   faExclamationCircle, faImage
 } from '@fortawesome/free-solid-svg-icons';

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { auth } from "../config/firebase";
+import { auth, provider } from "../firebase";
 import { signInWithPopup, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
-import { provider } from "../config/firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import backgroundImage from "../assets/login-image-playmi.jpg";
 
 const Login = () => {
@@ -11,13 +10,14 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleEmailLogin = async (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();            
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                navigate("/demo");
+                navigate("/dashboard");
             } catch (err) {
                 alert(err.message);
             }
@@ -27,7 +27,9 @@ const Login = () => {
     const handleGoogleLogin = async () => {
         try {
             await signInWithPopup(auth, provider);
-            navigate("/demo");
+            // Redirect to intended page or dashboard
+            const intendedPath = location.state?.from?.pathname || "/dashboard";
+            navigate(intendedPath);
         } catch (err) {
             if (err.code === 'auth/popup-closed-by-user') {
                 console.log("Popup closed by user.");
@@ -98,7 +100,16 @@ const Login = () => {
                         </div>
 
                         <button
-                            onClick={handleEmailLogin}
+                            onClick={async () => {
+                                try {
+                                    await signInWithEmailAndPassword(auth, email, password);
+                                    // Redirect to intended page or dashboard
+                                    const intendedPath = location.state?.from?.pathname || "/dashboard";
+                                    navigate(intendedPath);
+                                } catch (err) {
+                                    alert(err.message);
+                                }
+                            }}
                             className="w-full bg-blue-800 text-white py-2 rounded-full hover:bg-blue-700 transition"
                         >
                             Login

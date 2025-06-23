@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { auth } from "../config/firebase";
+import { auth } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import backgroundImage from "../assets/login-image-playmi.jpg";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +14,10 @@ const Signup = () => {
     const handleSignup = async () => {
         try {
             await createUserWithEmailAndPassword(auth, email, password);
-            navigate("/login");
+            // Add a small delay to let AuthContext sync before redirecting
+            setTimeout(() => {
+                navigate("/dashboard");
+            }, 1000);
         } catch (err) {
             alert(err.message);
         }
@@ -77,6 +80,16 @@ const Signup = () => {
                         Already have an account?{" "}
                         <Link to="/login" className="text-blue-800 font-semibold hover:underline">
                             Login!
+                        </Link>
+                    </div>
+
+                    {/* Seller Option */}
+                    <div className="mt-6">
+                        <Link 
+                            to="/seller-signup"
+                            className="text-blue-600 font-semibold hover:text-blue-800 hover:underline transition"
+                        >
+                            I would like to be a seller
                         </Link>
                     </div>
                 </div>

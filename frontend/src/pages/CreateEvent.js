@@ -12,6 +12,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import Footer from '../components/Footer';
+import AuthService from '../utils/authService';
 
 export default function CreateEventPage() {
 
@@ -247,15 +248,29 @@ export default function CreateEventPage() {
 
             console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
-            const response = await fetch('http://localhost:4556/events', {
+            const response = await AuthService.makeAuthenticatedRequest('http://localhost:4556/events', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
-                const error = await response.text();
-                throw new Error(error || 'Failed to save event.');
+                const errorData = await response.json().catch(() => ({ error: 'Failed to save event.' }));
+                
+                // Handle seller upgrade needed
+                if (errorData.code === 'UPGRADE_TO_SELLER_NEEDED') {
+                    const userChoice = window.confirm(
+                        `${errorData.message}\n\nWould you like to become a seller now?`
+                    );
+                    
+                    if (userChoice) {
+                        // Redirect to seller signup with current user's email
+                        window.location.href = `/seller-signup?email=${encodeURIComponent(errorData.userInfo?.email || '')}`;
+                        return;
+                    }
+                } else {
+                    throw new Error(errorData.error || errorData.message || 'Failed to save event.');
+                }
+                return; // Don't show success message if we're handling upgrade
             }
 
             alert(draft ? 'Draft saved successfully!' : 'Event submitted successfully!');

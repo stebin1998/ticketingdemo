@@ -33,7 +33,7 @@ const placeholderTickets = [
 export default function Cart() {
   const [tickets, setTickets] = useState(placeholderTickets);
   const [discount, setDiscount] = useState('');
-  const [timerKey, setTimerKey] = useState(0);
+  const [timerKey] = useState(0);
 
   const handleQuantityChange = (id, newQty) => {
     setTickets(tickets.map(ticket => ticket.id === id ? { ...ticket, quantity: newQty } : ticket));

@@ -1,6 +1,6 @@
 // /src/pages/Profile.js
 import React from 'react';
-import { FaInstagram, FaTiktok, FaYoutube, FaXTwitter, FaFacebook, FaCircleCheck, FaUsers } from 'react-icons/fa6';
+import { FaInstagram, FaTiktok, FaYoutube, FaTwitter, FaFacebook, FaCircleCheck, FaUsers } from 'react-icons/fa6';
 import TicketMiLogo from '../assets/ticketmi-logo.png';
 import EventCard from '../components/EventCard';
 
@@ -13,7 +13,7 @@ const profile = {
   socials: [
     { icon: <FaInstagram className="w-6 h-6 text-gray-800" />, name: 'Instagram' },
     { icon: <FaTiktok className="w-6 h-6 text-gray-800" />, name: 'TikTok' },
-    { icon: <FaXTwitter className="w-6 h-6 text-gray-800" />, name: 'X' },
+    { icon: <FaTwitter className="w-6 h-6 text-gray-800" />, name: 'Twitter' },
     { icon: <FaFacebook className="w-6 h-6 text-gray-800" />, name: 'Facebook' },
     { icon: <FaYoutube className="w-6 h-6 text-gray-800" />, name: 'YouTube' },
   ],

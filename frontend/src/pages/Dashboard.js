@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
     faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
-    faExclamationCircle, faImage, faHeart, faShare
+    faExclamationCircle, faImage, faHeart, faShare, faArrowUpRightFromSquare, faLocationArrow
 } from '@fortawesome/free-solid-svg-icons';
 import ErrorBoundary from '../components/ErrorBoundary';
 import EventCardSkeleton from '../components/EventCardSkeleton';
@@ -46,6 +46,47 @@ const Dashboard = () => {
         };
     }, [isModalOpen]);
 
+    function formatEventDateTime(event) {
+        if (!event.startDate || !event.startTime) return '';
+
+        const startDatePart = new Date(event.startDate);
+        const [startHour, startMinute] = event.startTime.split(':').map(Number);
+        const startDateTime = new Date(startDatePart);
+        startDateTime.setHours(startHour, startMinute);
+
+        // build end DateTime if available
+        let endDateTime = null;
+        if (event.endDate && event.endTime) {
+            const endDatePart = new Date(event.endDate);
+            const [endHour, endMinute] = event.endTime.split(':').map(Number);
+            endDateTime = new Date(endDatePart);
+            endDateTime.setHours(endHour, endMinute);
+        } else {
+            // fallback: assume 4 hours duration
+            endDateTime = new Date(startDateTime);
+            endDateTime.setHours(endDateTime.getHours() + 4);
+        }
+
+        const dayDateFormatter = new Intl.DateTimeFormat('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+        });
+        const dayDate = dayDateFormatter.format(startDateTime);
+
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            hour12: true,
+            timeZoneName: 'short',
+        });
+
+        const startTimeStr = timeFormatter.format(startDateTime).replace(':00', '');
+        const endTimeStr = timeFormatter.format(endDateTime).replace(':00', '').replace(/\s[A-Z]{3,4}$/, '');
+
+        return `${dayDate} · ${startTimeStr} - ${endTimeStr}`;
+    }
+
+
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -60,19 +101,35 @@ const Dashboard = () => {
             // Transform the data to match our EventCard component's expected format
             const transformedEvents = data
                 .filter(event => event.eventSettings?.publishStatus === 'published')
-                .map(event => ({
-                    ...event,
-                    id: event._id,
-                    title: event.name,
-                    date: event.dateTimes?.eventSlots?.[0]?.startDate || new Date().toISOString(),
-                    location: `${event.location?.venueName || ''}, ${event.location?.city || ''}`,
-                    price: event.ticketTiers?.[0]?.price || 0,
-                    organizer: event.organizerContact?.name || 'Unknown',
-                    image: event.files?.[0] || '',
-                    description: event.description,
-                    category: event.genre,
-                    status: event.eventSettings?.publishStatus || 'published'
-                }));
+                .map(event => {
+                    const firstSlot = event.dateTimes?.eventSlots?.[0] || {};
+                    return {
+                        ...event,
+                        id: event._id,
+                        title: event.name,
+                        location: {
+                            eventType: event.location?.eventType || '',
+                            venueName: event.location?.venueName || '',
+                            streetAddress: event.location?.streetAddress || '',
+                            city: event.location?.city || '',
+                            postalCode: event.location?.postalCode || '',
+                            country: event.location?.country || ''
+                        },
+                        price: event.ticketTiers?.[0]?.price || 0,
+                        organizer: event.organizerContact?.name || 'Unknown',
+                        image: event.files?.[0] || '',
+                        description: event.description,
+                        category: event.genre,
+                        status: event.eventSettings?.publishStatus || 'published',
+                        // new combined start and end datetime
+                        startDate: firstSlot.startDate || null,
+                        startTime: firstSlot.startTime || null,
+                        endDate: firstSlot.endDate || firstSlot.startDate || null,  // fallback if no endDate
+                        endTime: firstSlot.endTime || null,
+                    };
+                });
+
+
 
             setEvents(transformedEvents);
         } catch (err) {
@@ -103,9 +160,18 @@ const Dashboard = () => {
                 event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 event.organizer.toLowerCase().includes(searchQuery.toLowerCase());
 
+            const locationString = [
+                event.location.venueName,
+                event.location.streetAddress,
+                event.location.city,
+                event.location.postalCode,
+                event.location.country
+            ].filter(Boolean).join(' ').toLowerCase();
+
             const matchesLocation = locationFilter === 'All Locations' ||
                 locationFilter.trim() === '' ||
-                event.location.toLowerCase().includes(locationFilter.toLowerCase());
+                locationString.includes(locationFilter.toLowerCase());
+
 
             return matchesSearch && matchesLocation;
         });
@@ -206,19 +272,24 @@ const Dashboard = () => {
                 <Footer />
             </div>
             {isModalOpen && selectedEvent && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative overflow-hidden">
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50
+               transition-opacity duration-300 ease-in-out"
+                >
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full relative overflow-hidden
+                    max-h-[90vh] flex flex-col">
 
                         {/* Close Button */}
                         <button
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-gray-600 z-10"
+                            className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-gray-600
+                                rounded-full p-1 shadow hover:shadow-md transition z-10"
                         >
                             &times;
                         </button>
 
                         {/* Banner Image */}
-                        <div className="relative w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400 text-xl">
+                        <div className="relative w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400 text-xl flex-shrink-0">
                             {selectedEvent.image ? (
                                 <img
                                     src={selectedEvent.image}
@@ -230,52 +301,108 @@ const Dashboard = () => {
                             )}
 
                             {/* Icons positioned over the image */}
-                            <div className="absolute bottom-2 right-5 flex space-x-4 text-white drop-shadow-lg">
-                                <FontAwesomeIcon
-                                    icon={faHeart}
-                                    className="cursor-pointer hover:text-red-500"
-                                    size="lg"
-                                />
-                                <FontAwesomeIcon
-                                    icon={faShare}
-                                    className="cursor-pointer hover:text-blue-500"
-                                    size="lg"
-                                />
+                            <div className="absolute bottom-2 right-5 flex space-x-4">
+                                <div className="bg-black bg-opacity-50 rounded-full p-2 cursor-pointer hover:bg-red-600 transition">
+                                    <FontAwesomeIcon
+                                        icon={faHeart}
+                                        size="lg"
+                                        className="text-white"
+                                    />
+                                </div>
+                                <div className="bg-black bg-opacity-50 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition">
+                                    <FontAwesomeIcon
+                                        icon={faArrowUpRightFromSquare}
+                                        size="lg"
+                                        className="text-white"
+                                    />
+                                </div>
                             </div>
                         </div>
-                        {/* Modal Content */}
-                        <div className="p-6">
-                            {/* Title */}
-                            {selectedEvent && (
-                                <>
-                                    <h2 className="text-2xl font-bold text-ticketmi-primary break-words max-w-full sm:max-w-[55%] mb-2">
-                                        {selectedEvent.title}
-                                    </h2>
 
-                                    {selectedEvent.description && (
-                                        <p className="text-sm text-gray-600 mb-4 mt-2">
-                                            {isExpanded
-                                                ? selectedEvent.description
-                                                : selectedEvent.description.slice(0, 200) + (selectedEvent.description.length > 200 ? '...' : '')}
-                                            {selectedEvent.description.length > 200 && (
-                                                <button
-                                                    onClick={() => setIsExpanded(!isExpanded)}
-                                                    className="text-ticketmi-primary underline ml-1 text-xs"
-                                                >
-                                                    {isExpanded ? 'Read less' : 'Read more'}
-                                                </button>
-                                            )}
-                                        </p>
+                        {/* Modal Content Scrollable */}
+                        <div className="p-6 overflow-y-auto flex-1">
+                            {/* Title */}
+                            <h2 className="text-3xl font-extrabold text-ticketmi-primary leading-tight mb-4 break-words max-w-full sm:max-w-[55%]">
+                                {selectedEvent.title}
+                            </h2>
+
+                            {/* Description */}
+                            {selectedEvent.description && (
+                                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                                    {isExpanded
+                                        ? selectedEvent.description
+                                        : selectedEvent.description.slice(0, 200) + (selectedEvent.description.length > 200 ? '...' : '')}
+                                    {selectedEvent.description.length > 200 && (
+                                        <button
+                                            onClick={() => setIsExpanded(!isExpanded)}
+                                            className="text-ticketmi-primary underline ml-1 text-xs"
+                                        >
+                                            {isExpanded ? 'Read less' : 'Read more'}
+                                        </button>
                                     )}
-                                </>
+                                </p>
                             )}
 
+                            <hr className="border-t border-gray-200 mb-6" />
+
                             {/* Event Details */}
-                            <ul className="text-sm text-gray-700 space-y-1 mb-4">
-                                <li><strong>Date:</strong> {new Date(selectedEvent.date).toLocaleString()}</li>
-                                <li><strong>Location:</strong> {selectedEvent.location}</li>
-                                <li><strong>Organizer:</strong> {selectedEvent.organizer}</li>
-                            </ul>
+                            {/* Date Section */}
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Date</h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    <FontAwesomeIcon icon={faCalendarAlt} className="text-ticketmi-primary w-4 h-4" />
+                                    <span>{formatEventDateTime(selectedEvent)}</span>
+                                </div>
+                            </div>
+
+
+
+                            {/* Location Section */}
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-1">Location</h3>
+                                {selectedEvent?.location ? (
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                        {(selectedEvent.location.venueName ||
+                                            selectedEvent.location.streetAddress ||
+                                            selectedEvent.location.city ||
+                                            selectedEvent.location.postalCode ||
+                                            selectedEvent.location.country) && (
+                                                <li className="flex items-start">
+                                                    <FontAwesomeIcon
+                                                        icon={faMapMarkerAlt}
+                                                        className="mr-2 mt-1 text-ticketmi-primary"
+                                                    />
+                                                    <div>
+                                                        {selectedEvent.location.venueName && (
+                                                            <div className="font-semibold">{selectedEvent.location.venueName}</div>
+                                                        )}
+                                                        <div>
+                                                            {[
+                                                                selectedEvent.location.streetAddress,
+                                                                selectedEvent.location.city,
+                                                                selectedEvent.location.postalCode,
+                                                                selectedEvent.location.country,
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(' ')}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            )}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-gray-500">Location not available.</p>
+                                )}
+                            </div>
+
+
+                            {/* Organizer Section */}
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Organizer</h3>
+                                <p className="text-sm text-gray-700">{selectedEvent.organizer}</p>
+                            </div>
+
+
                             {/* Ticket Price Range Section */}
                             {selectedEvent.ticketTiers?.length > 0 ? (
                                 <div className="mb-6">
@@ -295,10 +422,13 @@ const Dashboard = () => {
                             ) : (
                                 <p className="text-sm text-gray-500 mb-6">No ticket tiers available.</p>
                             )}
+                        </div>
 
-                            {/* Checkout Button */}
+                        {/* Checkout Button sticky at bottom */}
+                        <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
                             <button
-                                className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+                                className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-lg
+                     shadow-lg hover:from-green-600 hover:to-green-800 transition"
                                 onClick={() => {
                                     alert("Proceeding to checkout flow 🚀");
                                     closeModal();

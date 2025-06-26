@@ -17,6 +17,15 @@ const EventCard = ({
   getImage,
   actions,
 }) => {
+
+  // Only show venueName and city
+  const formatLocation = (location) => {
+    if (!location) return 'Unknown';
+    if (typeof location === 'string') return location;
+
+    return [location.venueName, location.city].filter(Boolean).join(', ');
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
       <div className="h-48 bg-gray-200 flex items-center justify-center">
@@ -32,7 +41,7 @@ const EventCard = ({
           <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" /> {formatDate(event.date)}
         </p>
         <p className="text-sm text-gray-600 flex items-center mt-1">
-          <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1" /> {event.location}
+          <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1" /> {formatLocation(event.location)}
         </p>
         <p className="text-sm text-blue-600 font-semibold mt-1">
           {event.price === 0 ? (
@@ -64,7 +73,17 @@ EventCard.propTypes = {
       PropTypes.string,
       PropTypes.instanceOf(Date),
     ]),
-    location: PropTypes.string,
+    location: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        eventType: PropTypes.string,
+        venueName: PropTypes.string,
+        streetAddress: PropTypes.string,
+        city: PropTypes.string,
+        postalCode: PropTypes.string,
+        country: PropTypes.string,
+      }),
+    ]),
     price: PropTypes.number,
     organizer: PropTypes.string,
   }),

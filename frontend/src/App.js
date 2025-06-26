@@ -1,10 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { AuthProvider } from './contexts/AuthContext';
+import { PrivateRoute, SellerRoute, GuestRoute } from './components/ProtectedRoutes';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import SellerSignup from './pages/SellerSignup';
+import UpgradeToSeller from './pages/UpgradeToSeller';
 import Dashboard from './pages/Dashboard';
-import Demo from './pages/Demo';
+
 import CreateEventPage from './pages/CreateEvent';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
@@ -48,6 +52,22 @@ const AnimatedRoutes = () => {
         <Route
           path="/signup"
           element={
+            <GuestRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <Signup />
+              </motion.div>
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/seller-signup"
+          element={
             <motion.div
               initial="initial"
               animate="in"
@@ -55,41 +75,77 @@ const AnimatedRoutes = () => {
               variants={pageVariants}
               transition={pageTransition}
             >
-              <Signup />
+              <SellerSignup />
             </motion.div>
+          }
+        />
+        <Route
+          path="/upgrade-to-seller"
+          element={
+            <PrivateRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <UpgradeToSeller />
+              </motion.div>
+            </PrivateRoute>
           }
         />
         <Route
           path="/login"
           element={
-            <motion.div
-              initial="initial"
-              animate="in"
-              exit="out"
-              variants={pageVariants}
-              transition={pageTransition}
-            >
-              <Login />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/demo"
-          element={
-            <motion.div
-              initial="initial"
-              animate="in"
-              exit="out"
-              variants={pageVariants}
-              transition={pageTransition}
-            >
-              <Demo />
-            </motion.div>
+            <GuestRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <Login />
+              </motion.div>
+            </GuestRoute>
           }
         />
         <Route
           path="/createEvent"
           element={
+            <SellerRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <CreateEventPage />
+              </motion.div>
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/create-event"
+          element={
+            <SellerRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <CreateEventPage />
+              </motion.div>
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
             <motion.div
               initial="initial"
               animate="in"
@@ -97,7 +153,7 @@ const AnimatedRoutes = () => {
               variants={pageVariants}
               transition={pageTransition}
             >
-              <CreateEventPage />
+              <Dashboard />
             </motion.div>
           }
         />
@@ -147,29 +203,33 @@ const AnimatedRoutes = () => {
         <Route
           path="/profile"
           element={
-            <motion.div
-              initial="initial"
-              animate="in"
-              exit="out"
-              variants={pageVariants}
-              transition={pageTransition}
-            >
-              <Profile />
-            </motion.div>
+            <PrivateRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <Profile />
+              </motion.div>
+            </PrivateRoute>
           }
         />
         <Route
           path="/cart"
           element={
-            <motion.div
-              initial="initial"
-              animate="in"
-              exit="out"
-              variants={pageVariants}
-              transition={pageTransition}
-            >
-              <Cart />
-            </motion.div>
+            <PrivateRoute>
+              <motion.div
+                initial="initial"
+                animate="in"
+                exit="out"
+                variants={pageVariants}
+                transition={pageTransition}
+              >
+                <Cart />
+              </motion.div>
+            </PrivateRoute>
           }
         />
       </Routes>
@@ -179,9 +239,11 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AnimatedRoutes />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AnimatedRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

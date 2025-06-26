@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
     faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
-    faExclamationCircle, faImage
+    faExclamationCircle, faImage, faHeart, faShare
 } from '@fortawesome/free-solid-svg-icons';
 import ErrorBoundary from '../components/ErrorBoundary';
 import EventCardSkeleton from '../components/EventCardSkeleton';
@@ -18,6 +18,34 @@ const Dashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [events, setEvents] = useState([]);
     const [error, setError] = useState(null);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const MAX_LENGTH = 200;
+
+    const openModal = (event) => {
+        setSelectedEvent(event);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setSelectedEvent(null);
+        setIsModalOpen(false);
+    };
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        // Clean up on unmount just in case
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isModalOpen]);
+
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -33,6 +61,7 @@ const Dashboard = () => {
             const transformedEvents = data
                 .filter(event => event.eventSettings?.publishStatus === 'published')
                 .map(event => ({
+                    ...event,
                     id: event._id,
                     title: event.name,
                     date: event.dateTimes?.eventSlots?.[0]?.startDate || new Date().toISOString(),
@@ -53,6 +82,14 @@ const Dashboard = () => {
             setIsLoading(false);
         }
     }, []);
+
+    const shouldTruncate = selectedEvent?.description?.length > MAX_LENGTH;
+    const displayedDescription =
+        selectedEvent?.description
+            ? isExpanded || !shouldTruncate
+                ? selectedEvent.description
+                : selectedEvent.description.slice(0, MAX_LENGTH) + '...'
+            : '';
 
     useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -143,6 +180,19 @@ const Dashboard = () => {
                                         music: faMusic, art: faPalette, food: faUtensils, sports: faRunning, film: faFilm, comedy: faMicrophoneAlt
                                     }[category] || faTicketAlt)}
                                     getImage={(image) => image || (<div className="bg-gray-200 flex items-center justify-center h-full"><FontAwesomeIcon icon={faImage} size="3x" className="text-gray-400" /></div>)}
+                                    actions={
+                                        <button
+
+                                            onClick={() => {
+                                                setSelectedEvent(event);
+                                                openModal(event);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className="bg-[#5E4DC3] text-white rounded w-full py-2 hover:bg-opacity-90 transition-colors"
+                                        >
+                                            Buy Ticket
+                                        </button>
+                                    }
                                 />
                             ))}
                         </div>
@@ -155,6 +205,113 @@ const Dashboard = () => {
 
                 <Footer />
             </div>
+            {isModalOpen && selectedEvent && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl relative overflow-hidden">
+
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-gray-600 z-10"
+                        >
+                            &times;
+                        </button>
+
+                        {/* Banner Image */}
+                        <div className="relative w-full h-64 bg-gray-200 flex items-center justify-center text-gray-400 text-xl">
+                            {selectedEvent.image ? (
+                                <img
+                                    src={selectedEvent.image}
+                                    alt={selectedEvent.title}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                "No banner available"
+                            )}
+
+                            {/* Icons positioned over the image */}
+                            <div className="absolute bottom-2 right-5 flex space-x-4 text-white drop-shadow-lg">
+                                <FontAwesomeIcon
+                                    icon={faHeart}
+                                    className="cursor-pointer hover:text-red-500"
+                                    size="lg"
+                                />
+                                <FontAwesomeIcon
+                                    icon={faShare}
+                                    className="cursor-pointer hover:text-blue-500"
+                                    size="lg"
+                                />
+                            </div>
+                        </div>
+                        {/* Modal Content */}
+                        <div className="p-6">
+                            {/* Title */}
+                            {selectedEvent && (
+                                <>
+                                    <h2 className="text-2xl font-bold text-ticketmi-primary break-words max-w-full sm:max-w-[55%] mb-2">
+                                        {selectedEvent.title}
+                                    </h2>
+
+                                    {selectedEvent.description && (
+                                        <p className="text-sm text-gray-600 mb-4 mt-2">
+                                            {isExpanded
+                                                ? selectedEvent.description
+                                                : selectedEvent.description.slice(0, 200) + (selectedEvent.description.length > 200 ? '...' : '')}
+                                            {selectedEvent.description.length > 200 && (
+                                                <button
+                                                    onClick={() => setIsExpanded(!isExpanded)}
+                                                    className="text-ticketmi-primary underline ml-1 text-xs"
+                                                >
+                                                    {isExpanded ? 'Read less' : 'Read more'}
+                                                </button>
+                                            )}
+                                        </p>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Event Details */}
+                            <ul className="text-sm text-gray-700 space-y-1 mb-4">
+                                <li><strong>Date:</strong> {new Date(selectedEvent.date).toLocaleString()}</li>
+                                <li><strong>Location:</strong> {selectedEvent.location}</li>
+                                <li><strong>Organizer:</strong> {selectedEvent.organizer}</li>
+                            </ul>
+                            {/* Ticket Price Range Section */}
+                            {selectedEvent.ticketTiers?.length > 0 ? (
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Ticket Price</h3>
+                                    <p className="text-gray-700 font-semibold">
+                                        {(() => {
+                                            const prices = selectedEvent.ticketTiers
+                                                .filter(tier => tier.active && tier.public)
+                                                .map(tier => tier.price)
+                                                .sort((a, b) => a - b);
+                                            if (prices.length === 0) return "No available tickets";
+                                            if (prices.length === 1) return `$${prices[0].toFixed(2)}`;
+                                            return `$${prices[0].toFixed(2)} - $${prices[prices.length - 1].toFixed(2)}`;
+                                        })()}
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500 mb-6">No ticket tiers available.</p>
+                            )}
+
+                            {/* Checkout Button */}
+                            <button
+                                className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+                                onClick={() => {
+                                    alert("Proceeding to checkout flow 🚀");
+                                    closeModal();
+                                }}
+                            >
+                                Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </ErrorBoundary>
     );
 };

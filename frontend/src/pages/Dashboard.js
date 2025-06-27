@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
     faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
-    faExclamationCircle, faImage, faHeart, faShare, faArrowUpRightFromSquare, faLocationArrow
+    faExclamationCircle, faImage, faHeart, faShare, faArrowUpRightFromSquare, faLocationArrow, faBookmark
 } from '@fortawesome/free-solid-svg-icons';
 import ErrorBoundary from '../components/ErrorBoundary';
 import EventCardSkeleton from '../components/EventCardSkeleton';
@@ -106,6 +106,7 @@ const Dashboard = () => {
                     return {
                         ...event,
                         id: event._id,
+                        tags: event.tags,
                         title: event.name,
                         location: {
                             eventType: event.location?.eventType || '',
@@ -139,6 +140,17 @@ const Dashboard = () => {
             setIsLoading(false);
         }
     }, []);
+
+    let lowestPrice = 0;
+
+    if (selectedEvent?.ticketTiers?.length > 0) {
+        const prices = selectedEvent.ticketTiers
+            .filter(tier => tier.active && tier.public)
+            .map(tier => tier.price)
+            .sort((a, b) => a - b);
+
+        lowestPrice = prices[0] || 0;
+    }
 
     const shouldTruncate = selectedEvent?.description?.length > MAX_LENGTH;
     const displayedDescription =
@@ -396,12 +408,6 @@ const Dashboard = () => {
                             </div>
 
 
-                            {/* Organizer Section */}
-                            <div className="mb-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Organizer</h3>
-                                <p className="text-sm text-gray-700">{selectedEvent.organizer}</p>
-                            </div>
-
 
                             {/* Ticket Price Range Section */}
                             {selectedEvent.ticketTiers?.length > 0 ? (
@@ -422,20 +428,99 @@ const Dashboard = () => {
                             ) : (
                                 <p className="text-sm text-gray-500 mb-6">No ticket tiers available.</p>
                             )}
+                            {selectedEvent.tags?.length > 0 && (
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Tags</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedEvent.tags.map((tag, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="bg-ticketmi-primary/10 text-ticketmi-primary px-3 py-1 rounded-full text-sm font-medium shadow-sm"
+                                            >
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Organizer</h3>
+
+                                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl shadow-sm">
+                                    <div className="flex items-center gap-4">
+                                        {/* Dummy Profile Image */}
+                                        <img
+                                            src="https://i.pravatar.cc/100?img=12" // Placeholder avatar image
+                                            alt="Organizer Profile"
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
+
+                                        <div>
+                                            {/* Dummy Organizer Name */}
+                                            <p className="text-sm font-semibold text-gray-800">Alex Johnson</p>
+                                            <p className="text-xs text-gray-500">Event Organizer</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Non-functional Follow Button */}
+                                    <button
+                                        className="px-4 py-1 text-sm font-medium text-ticketmi-primary border border-ticketmi-primary rounded-full hover:bg-ticketmi-primary hover:text-white transition"
+                                        onClick={() => { }}
+                                    >
+                                        Follow
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Refund Policy Section */}
+                            {selectedEvent.eventSettings?.refundPolicy && (
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Refund Policy</h3>
+                                    <p className="text-sm text-gray-700">
+                                        {selectedEvent.eventSettings.refundPolicyText?.trim()
+                                            ? selectedEvent.eventSettings.refundPolicyText
+                                            : (() => {
+                                                switch (selectedEvent.eventSettings.refundPolicy) {
+                                                    case '1_day_before':
+                                                        return 'Refunds are available up to 1 day before the event.';
+                                                    case '7_days_before':
+                                                        return 'Refunds are available up to 7 days before the event.';
+                                                    case 'no_refund':
+                                                        return 'This event does not offer refunds.';
+                                                    default:
+                                                        return 'Please contact the organizer for refund details.';
+                                                }
+                                            })()}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
+
+
+
                         {/* Checkout Button sticky at bottom */}
-                        <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
-                            <button
-                                className="w-full bg-gradient-to-r from-green-500 to-green-700 text-white py-3 rounded-lg
-                     shadow-lg hover:from-green-600 hover:to-green-800 transition"
-                                onClick={() => {
-                                    alert("Proceeding to checkout flow 🚀");
-                                    closeModal();
-                                }}
-                            >
-                                Proceed to Checkout
-                            </button>
+                        <div className="p-6 border-t-2 border-gray-300 bg-white sticky bottom-0">
+                            <div className="flex items-center gap-4">
+                                {/* Save Button */}
+                                <button
+                                    className="w-12 h-12 flex items-center justify-center bg-gray-100 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200 transition"
+                                    onClick={() => alert("Saved for later! 💾")}
+                                >
+                                    <FontAwesomeIcon icon={faBookmark} className="w-5 h-5" />
+                                </button>
+
+                                {/* Checkout Button */}
+                                <button
+                                    className="flex-1 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 px-4 rounded-lg shadow-lg hover:from-green-600 hover:to-green-800 transition text-sm font-semibold"
+                                    onClick={() => {
+                                        alert("Proceeding to checkout flow 🚀");
+                                        closeModal();
+                                    }}
+                                >
+                                    Grab your ticket now from just <strong>${lowestPrice.toFixed(2)}</strong>!
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

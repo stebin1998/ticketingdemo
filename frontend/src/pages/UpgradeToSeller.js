@@ -22,10 +22,29 @@ const UpgradeToSeller = () => {
     });
 
     const updateFormData = (field, value) => {
+        // Auto-format website URL if it's a website field
+        if (field === 'website' && value.trim() !== '') {
+            value = formatWebsiteUrl(value);
+        }
+        
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
+    };
+
+    // Helper function to format website URL
+    const formatWebsiteUrl = (url) => {
+        if (!url || url.trim() === '') return '';
+        
+        let formattedUrl = url.trim();
+        
+        // If it doesn't start with http:// or https://, add https://
+        if (!formattedUrl.match(/^https?:\/\//)) {
+            formattedUrl = 'https://' + formattedUrl;
+        }
+        
+        return formattedUrl;
     };
 
     const handleStep1Next = (e) => {
@@ -46,8 +65,14 @@ const UpgradeToSeller = () => {
         try {
             console.log('🔄 Upgrading user to seller...');
             
+            // Prepare form data with formatted URL
+            const upgradeData = {
+                ...formData,
+                website: formData.website ? formatWebsiteUrl(formData.website) : ''
+            };
+            
             // Use AuthService directly for the upgrade
-            await AuthService.upgradeToSeller(formData);
+            await AuthService.upgradeToSeller(upgradeData);
             
             console.log('✅ Successfully upgraded to seller');
             
@@ -134,7 +159,7 @@ const UpgradeToSeller = () => {
                                 />
                                 
                                 <input
-                                    type="url"
+                                    type="text"
                                     placeholder="Website URL"
                                     value={formData.website}
                                     onChange={(e) => updateFormData('website', e.target.value)}

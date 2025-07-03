@@ -46,10 +46,29 @@ const SellerSignup = () => {
 
     // Update form data
     const updateFormData = (field, value) => {
+        // Auto-format website URL if it's a website field
+        if (field === 'website' && value.trim() !== '') {
+            value = formatWebsiteUrl(value);
+        }
+        
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
+    };
+
+    // Helper function to format website URL
+    const formatWebsiteUrl = (url) => {
+        if (!url || url.trim() === '') return '';
+        
+        let formattedUrl = url.trim();
+        
+        // If it doesn't start with http:// or https://, add https://
+        if (!formattedUrl.match(/^https?:\/\//)) {
+            formattedUrl = 'https://' + formattedUrl;
+        }
+        
+        return formattedUrl;
     };
 
     // Step 1: Basic Information
@@ -90,10 +109,10 @@ const SellerSignup = () => {
         setError('');
         
         try {
-            // Prepare seller info
+            // Prepare seller info with formatted URL
             const sellerInfo = {
                 companyName: formData.companyName,
-                website: formData.website,
+                website: formData.website ? formatWebsiteUrl(formData.website) : '',
                 businessAddress: formData.businessAddress,
                 contactNumber: formData.contactNumber,
                 paymentInstitution: formData.paymentInstitution,
@@ -238,7 +257,7 @@ const SellerSignup = () => {
                                 />
                                 
                                 <input
-                                    type="url"
+                                    type="text"
                                     placeholder="Website URL"
                                     value={formData.website}
                                     onChange={(e) => updateFormData('website', e.target.value)}

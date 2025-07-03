@@ -1,41 +1,70 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { auth, provider } from "../firebase";
-import { signInWithPopup, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import backgroundImage from "../assets/login-image-playmi.jpg";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [shouldNavigateAfterLogin, setShouldNavigateAfterLogin] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const { login, isAuthenticated, loading: authLoading } = useAuth();
+
+    // Navigate to dashboard when authentication is complete
+    useEffect(() => {
+        if (shouldNavigateAfterLogin && isAuthenticated && !authLoading) {
+            const intendedPath = location.state?.from?.pathname || "/dashboard";
+            navigate(intendedPath);
+            setShouldNavigateAfterLogin(false);
+        }
+    }, [isAuthenticated, authLoading, shouldNavigateAfterLogin, navigate, location.state]);
 
     const handleEmailLogin = async (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                navigate("/dashboard");
-            } catch (err) {
-                alert(err.message);
-            }
+            e.preventDefault();
+            await handleLogin();
+        }
+    };
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            alert("Please enter both email and password.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Use AuthService through context instead of direct Firebase
+            await login(email, password);
+            
+            // Set flag to navigate after auth state is ready
+            setShouldNavigateAfterLogin(true);
+        } catch (err) {
+            alert(err.message);
+            setLoading(false);
         }
     };
 
     const handleGoogleLogin = async () => {
+        setLoading(true);
         try {
             await signInWithPopup(auth, provider);
-            // Redirect to intended page or dashboard
-            const intendedPath = location.state?.from?.pathname || "/dashboard";
-            navigate(intendedPath);
+            
+            // Set flag to navigate after auth state is ready
+            setShouldNavigateAfterLogin(true);
         } catch (err) {
             if (err.code === 'auth/popup-closed-by-user') {
                 console.log("Popup closed by user.");
             } else {
                 alert(err.message);
             }
+            setLoading(false);
         }
     };
 
@@ -79,6 +108,7 @@ const Login = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-950"
+                            disabled={loading}
                         />
                         <div className="relative">
                             <input
@@ -88,37 +118,32 @@ const Login = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyDown={handleEmailLogin}
                                 className="w-full px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-950"
+                                disabled={loading}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-2.5 text-blue-950 font-semibold hover:text-blue-950"
                                 aria-label={showPassword ? "Hide password" : "Show password"}
+                                disabled={loading}
                             >
                                 {showPassword ? "Hide" : "Show"}
                             </button>
                         </div>
 
                         <button
-                            onClick={async () => {
-                                try {
-                                    await signInWithEmailAndPassword(auth, email, password);
-                                    // Redirect to intended page or dashboard
-                                    const intendedPath = location.state?.from?.pathname || "/dashboard";
-                                    navigate(intendedPath);
-                                } catch (err) {
-                                    alert(err.message);
-                                }
-                            }}
-                            className="w-full bg-blue-800 text-white py-2 rounded-full hover:bg-blue-700 transition"
+                            onClick={handleLogin}
+                            className="w-full bg-blue-800 text-white py-2 rounded-full hover:bg-blue-700 transition disabled:opacity-50"
+                            disabled={loading}
                         >
-                            Login
+                            {loading ? "Logging in..." : "Login"}
                         </button>
 
                         <div className="text-right">
                             <button
                                 onClick={handleResetPassword}
-                                className="text-sm text-blue-950 hover:underline focus:outline-none"
+                                className="text-sm text-blue-950 hover:underline focus:outline-none disabled:opacity-50"
+                                disabled={loading}
                             >
                                 Forgot Password?
                             </button>
@@ -135,14 +160,15 @@ const Login = () => {
                     {/* Google Sign-In Button */}
                     <button
                         onClick={handleGoogleLogin}
-                        className="w-full border border-gray-300 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-gray-50 transition"
+                        className="w-full border border-gray-300 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-gray-50 transition disabled:opacity-50"
+                        disabled={loading}
                     >
                         <img
                             src="https://www.svgrepo.com/show/475656/google-color.svg"
                             alt="Google logo"
                             className="w-5 h-5"
                         />
-                        <span>Login with Google</span>
+                        <span>{loading ? "Logging in..." : "Login with Google"}</span>
                     </button>
 
                     {/* Signup link */}

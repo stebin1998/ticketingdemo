@@ -5,6 +5,7 @@ import {
   faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
   faExclamationCircle, faImage
 } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../contexts/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import EventCardSkeleton from '../components/EventCardSkeleton';
 import FeaturedEvent from '../components/FeaturedEvent';
@@ -13,6 +14,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const Dashboard = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('Toronto');
   const [isLoading, setIsLoading] = useState(true);
@@ -32,13 +34,13 @@ const Dashboard = () => {
       // Transform the data to match our EventCard component's expected format
       const transformedEvents = data.map(event => ({
         id: event._id,
-        title: event.name,
-        date: event.dateTimes?.eventSlots?.[0]?.startDate || new Date().toISOString(),
+        title: event.eventName,
+        date: event.dateTimes?.eventSlots?.[0]?.date || new Date().toISOString(),
         location: `${event.location?.venueName || ''}, ${event.location?.city || ''}`,
         price: event.ticketTiers?.[0]?.price || 0,
         organizer: event.organizerContact?.name || 'Unknown',
         image: event.files?.[0] || '',
-        description: event.description,
+        description: event.eventDescription,
         category: event.genre,
         status: event.eventSettings?.publishStatus || 'published'
       }));
@@ -52,7 +54,12 @@ const Dashboard = () => {
     }
   }, []);
 
-  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+  // Wait for authentication to complete before loading events
+  useEffect(() => {
+    if (!authLoading) {
+      fetchEvents();
+    }
+  }, [authLoading, fetchEvents]);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
@@ -72,7 +79,8 @@ const Dashboard = () => {
     });
   }, [events, searchQuery, locationFilter]);
 
-  if (isLoading) {
+  // Show loading while auth is loading or events are loading
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-ticketmi-neutral flex flex-col">
         <Header />

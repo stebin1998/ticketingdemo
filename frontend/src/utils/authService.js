@@ -10,6 +10,7 @@ export class AuthService {
   static listeners = [];
   static currentToken = null;
   static isCreatingSeller = false; // Flag to prevent auto-sync during seller creation
+  static loginFlagSetter = null; // Store the loginFlag setter for state updates
 
   /**
    * Initialize authentication listener with loginFlag dependency pattern
@@ -17,6 +18,9 @@ export class AuthService {
    */
   static initializeAuth(setLoginFlag) {
     console.log('🔄 Initializing AuthService...');
+    
+    // Store the loginFlag setter for later use
+    this.loginFlagSetter = setLoginFlag;
     
     // Set up Firebase auth state listener
     return onAuthStateChanged(auth, async (firebaseUser) => {
@@ -66,6 +70,17 @@ export class AuthService {
         setLoginFlag(prev => !prev); // Still trigger update even on error
       }
     });
+  }
+
+  /**
+   * Trigger loginFlag update manually - useful for role changes
+   */
+  static triggerStateUpdate() {
+    if (this.loginFlagSetter) {
+      console.log('🔄 Manually triggering state update');
+      this.loginFlagSetter(prev => !prev);
+    }
+    this.notifyListeners();
   }
 
   /**
@@ -444,7 +459,9 @@ export class AuthService {
       this.userProfile = data.user;
       
       console.log('✅ Successfully upgraded to seller');
-      this.notifyListeners();
+      
+      // Trigger state update to refresh UI components
+      this.triggerStateUpdate();
       
       return data.user;
     } catch (error) {

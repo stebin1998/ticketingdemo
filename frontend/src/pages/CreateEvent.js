@@ -80,7 +80,7 @@ export default function CreateEventPage() {
     const [tiers, setTiers] = useState([
         {
             name: '',
-            type: '',
+            type: 'free',
             price: '',
             quantity: '',
             description: '',
@@ -99,7 +99,7 @@ export default function CreateEventPage() {
     };
 
     const addTier = () => {
-        setTiers([...tiers, { name: '', type: '', price: '', quantity: '', description: '', active: true, public: true }]);
+        setTiers([...tiers, { name: '', type: 'free', price: '', quantity: '', description: '', active: true, public: true }]);
     };
 
     // Discount Codes
@@ -624,7 +624,13 @@ export default function CreateEventPage() {
                                             value={tier.type}
                                             onChange={(value) => updateTier(index, 'type', value)}
                                         >
-                                            <SelectTrigger>Ticket Type</SelectTrigger>
+                                            <SelectTrigger>
+                                                {tier.type ? (
+                                                    tier.type === 'free' ? 'Free' :
+                                                    tier.type === 'paid' ? 'Paid' :
+                                                    tier.type === 'donation' ? 'Donation' : 'Ticket Type'
+                                                ) : 'Ticket Type'}
+                                            </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="free">Free</SelectItem>
                                                 <SelectItem value="paid">Paid</SelectItem>

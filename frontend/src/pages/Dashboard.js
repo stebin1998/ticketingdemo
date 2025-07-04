@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
@@ -21,6 +21,7 @@ const Dashboard = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+
     const MAX_LENGTH = 200;
 
     const openModal = (event) => {
@@ -45,6 +46,9 @@ const Dashboard = () => {
             document.body.style.overflow = '';
         };
     }, [isModalOpen]);
+
+
+
 
     function formatEventDateTime(event) {
         if (!event.startDate || !event.startTime) return '';
@@ -311,6 +315,8 @@ const Dashboard = () => {
                             ) : (
                                 "No banner available"
                             )}
+                            {/* Bottom gradient shadow */}
+                           
 
                             {/* Icons positioned over the image */}
                             <div className="absolute bottom-2 right-5 flex space-x-4">
@@ -330,9 +336,11 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         </div>
+                        
 
                         {/* Modal Content Scrollable */}
                         <div className="p-6 overflow-y-auto flex-1">
+                            
                             {/* Title */}
                             <h2 className="text-3xl font-extrabold text-ticketmi-primary leading-tight mb-4 break-words max-w-full sm:max-w-[55%]">
                                 {selectedEvent.title}

@@ -24,7 +24,7 @@ export default function TagsInput({ tags, onChange }) {
 
   return (
     <div>
-      <h3 className="mb-1">Tags</h3>
+      <h3 className="mb-1">Tags<span className="text-red-500">*</span></h3>
       <div className="flex flex-wrap items-center gap-2 border p-2 rounded min-h-[42px]">
         {tags.map((tag, index) => (
           <span

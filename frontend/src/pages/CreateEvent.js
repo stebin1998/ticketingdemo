@@ -35,6 +35,8 @@ export default function CreateEventPage() {
         },
     });
 
+    const [formError, setFormError] = useState('');
+
     const updateDetails = (field, value) => {
         setDetails((prev) => ({ ...prev, [field]: value }));
     };
@@ -205,6 +207,24 @@ export default function CreateEventPage() {
 
     // Submit / Save Draft Handlers
     const handleSubmit = async (draft = false) => {
+        if (
+            !details.name.trim() ||
+            !details.description.trim() ||
+            !details.category ||
+            details.tags.length === 0 ||
+            !details.location.city.trim() ||
+            !details.location.country.trim() ||
+            !details.location.postalCode.trim() ||
+            !details.location.state.trim() ||
+            !details.location.streetAddress.trim() ||
+            !details.location.venueName.trim()
+
+        ) {
+            setFormError('Please fill out all required fields before continuing.');
+            return;
+        }
+
+        setFormError('');
         try {
             // Debug log for eventSlots
             console.log('eventSlots state:', eventSlots);
@@ -243,7 +263,7 @@ export default function CreateEventPage() {
                 discountCodes: codes,
                 eventSettings: {
                     ...policy,
-                    publishStatus: 'draft' ,
+                    publishStatus: 'draft',
                 },
                 organizerContact: organizer,
             };
@@ -257,13 +277,13 @@ export default function CreateEventPage() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Failed to save event.' }));
-                
+
                 // Handle seller upgrade needed
                 if (errorData.code === 'UPGRADE_TO_SELLER_NEEDED') {
                     const userChoice = window.confirm(
                         `${errorData.message}\n\nWould you like to become a seller now?`
                     );
-                    
+
                     if (userChoice) {
                         // Redirect to seller signup with current user's email
                         window.location.href = `/seller-signup?email=${encodeURIComponent(errorData.userInfo?.email || '')}`;
@@ -368,7 +388,7 @@ export default function CreateEventPage() {
                                     <h2 className="text-xl font-semibold">Event Details</h2>
 
                                     <div>
-                                        <h3 className="mb-1">Name</h3>
+                                        <h3 className="mb-1">Name<span className="text-red-500">*</span></h3>
                                         <Input
                                             placeholder="Give Name"
                                             value={details.name}
@@ -377,7 +397,7 @@ export default function CreateEventPage() {
                                     </div>
 
                                     <div>
-                                        <h3 className="mb-1">Description</h3>
+                                        <h3 className="mb-1">Description<span className="text-red-500">*</span></h3>
                                         <Textarea
                                             placeholder="Provide a Description"
                                             value={details.description}
@@ -387,7 +407,7 @@ export default function CreateEventPage() {
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
-                                            <h3 className="mb-1">Genre / Category</h3>
+                                            <h3 className="mb-1">Genre / Category<span className="text-red-500">*</span></h3>
                                             <Select
                                                 value={details.category}
                                                 onChange={(value) => updateDetails('category', value)}
@@ -416,7 +436,7 @@ export default function CreateEventPage() {
 
                                             <div className="space-y-4">
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Event Type</h4>
+                                                    <h4 className="font-semibold mb-1">Event Type<span className="text-red-500">*</span></h4>
                                                     <Select
                                                         value={details.location.eventType}
                                                         onChange={(value) => updateLocation('eventType', value)}
@@ -434,7 +454,7 @@ export default function CreateEventPage() {
 
                                             <div className="space-y-4">
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Venue Name</h4>
+                                                    <h4 className="font-semibold mb-1">Venue Name<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Venue Name"
                                                         value={details.location.venueName}
@@ -442,7 +462,7 @@ export default function CreateEventPage() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Street Address</h4>
+                                                    <h4 className="font-semibold mb-1">Street Address<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Street Address"
                                                         value={details.location.streetAddress}
@@ -450,7 +470,7 @@ export default function CreateEventPage() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">City</h4>
+                                                    <h4 className="font-semibold mb-1">City<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="City"
                                                         value={details.location.city}
@@ -459,7 +479,7 @@ export default function CreateEventPage() {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">State/Province</h4>
+                                                        <h4 className="font-semibold mb-1">State/Province<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             placeholder="State/Province"
                                                             value={details.location.state}
@@ -467,7 +487,7 @@ export default function CreateEventPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">Postal Code</h4>
+                                                        <h4 className="font-semibold mb-1">Postal Code<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             placeholder="Postal Code"
                                                             value={details.location.postalCode}
@@ -476,7 +496,7 @@ export default function CreateEventPage() {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Country</h4>
+                                                    <h4 className="font-semibold mb-1">Country<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Country"
                                                         value={details.location.country}
@@ -512,7 +532,7 @@ export default function CreateEventPage() {
                                                     className="grid grid-cols-2 gap-6 border p-4 rounded-lg relative"
                                                 >
                                                     <div className="flex flex-col gap-2">
-                                                        <h4 className="text-sm font-medium">Start Date</h4>
+                                                        <h4 className="text-sm font-medium">Start Date<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="date"
                                                             value={slot.startDate}
@@ -525,7 +545,7 @@ export default function CreateEventPage() {
                                                         />
                                                     </div>
                                                     <div className="flex flex-col gap-2">
-                                                        <h4 className="text-sm font-medium">End Date</h4>
+                                                        <h4 className="text-sm font-medium">End Date<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="date"
                                                             value={slot.endDate}
@@ -560,7 +580,7 @@ export default function CreateEventPage() {
                                                 <h3 className="mb-1">Date</h3>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="text-sm text-gray-500 mb-1">Start</h4>
+                                                        <h4 className="text-sm text-gray-500 mb-1">Start<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="date"
                                                             placeholder="Start Date"
@@ -569,7 +589,7 @@ export default function CreateEventPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm text-gray-500 mb-1">End</h4>
+                                                        <h4 className="text-sm text-gray-500 mb-1">End<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="date"
                                                             placeholder="End Date"
@@ -583,7 +603,7 @@ export default function CreateEventPage() {
                                                 <h3 className="mb-1">Time</h3>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="text-sm text-gray-500 mb-1">Start</h4>
+                                                        <h4 className="text-sm text-gray-500 mb-1">Start<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="time"
                                                             placeholder="Start Time"
@@ -592,7 +612,7 @@ export default function CreateEventPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm text-gray-500 mb-1">End</h4>
+                                                        <h4 className="text-sm text-gray-500 mb-1">End<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             type="time"
                                                             placeholder="End Time"
@@ -617,7 +637,7 @@ export default function CreateEventPage() {
                         </div>
                         <Card>
                             <CardContent className="p-6 space-y-4">
-                                <h2 className="font-semibold text-xl">Ticket Tiers</h2>
+                                <h2 className="font-semibold text-xl">Ticket Tiers<span className="text-red-500">*</span></h2>
 
                                 {tiers.map((tier, index) => (
                                     <div key={index} className="grid grid-cols-2 gap-4 border p-4 rounded-xl">
@@ -867,7 +887,7 @@ export default function CreateEventPage() {
                         <Card>
                             <CardContent className="grid gap-4 p-6">
                                 <h2 className="font-semibold text-xl">Event Settings</h2>
-                                <h3 className="mb-1">Refund Policy</h3>
+                                <h3 className="mb-1">Refund Policy<span className="text-red-500">*</span></h3>
                                 <Select
                                     value={policy.refundPolicy}
                                     onChange={(value) => updatePolicy('refundPolicy', value)}
@@ -890,7 +910,7 @@ export default function CreateEventPage() {
 
                                 <Select>
                                     <h3 className="mb-1">Listing Visibility</h3>
-                                    <SelectTrigger>Visibility</SelectTrigger>
+                                    <SelectTrigger>Visibility<span className="text-red-500">*</span></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="public">Public </SelectItem>
                                         <SelectItem value="private">Private</SelectItem>
@@ -930,6 +950,9 @@ export default function CreateEventPage() {
                                 <Input type="number" placeholder="Phone Number" />
                             </CardContent>
                         </Card>
+                        {formError && (
+                                <p className="text-red-500 text-sm mb-2">{formError}</p>
+                            )}
                         <div className='flex space-x-4 '>
                            
                             <Button onClick={() => handleSubmit(false)}>Review</Button>

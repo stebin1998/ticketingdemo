@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import AuthService from '../utils/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CreateEventPage() {
     const navigate = useNavigate();
@@ -36,6 +37,20 @@ export default function CreateEventPage() {
     });
 
     const [formError, setFormError] = useState('');
+    const [uploadedImages, setUploadedImages] = useState([]);
+    const [formSubmitted, setFormSubmitted] = useState(false);
+    const { user, profile, authenticated } = useAuth();
+    console.log("🔍 useAuth state:", { user, profile, authenticated });
+
+    useEffect(() => {
+        if (user) {
+          console.log("📧 Setting organizer email from user:", user);
+          setOrganizer(prev => ({
+            ...prev,
+            email: user,
+          }));
+        }
+      }, [user]);
 
     const updateDetails = (field, value) => {
         setDetails((prev) => ({ ...prev, [field]: value }));
@@ -161,10 +176,11 @@ export default function CreateEventPage() {
 
     // Organizer Contact
     const [organizer, setOrganizer] = useState({
+        email: '',
         instagram: '',
         facebook: '',
         twitter: '',
-    });
+      });
 
     // Organizer Handlers
     const updateOrganizer = (field, value) => {
@@ -203,21 +219,25 @@ export default function CreateEventPage() {
     }, [sections]);
 
     // Image upload state
-    const [uploadedImages, setUploadedImages] = useState([]);
+
 
     // Submit / Save Draft Handlers
     const handleSubmit = async (draft = false) => {
+        setFormSubmitted(true);
         if (
-            !details.name.trim() ||
-            !details.description.trim() ||
+            !details.name?.trim() ||
+            !details.description?.trim() ||
             !details.category ||
             details.tags.length === 0 ||
-            !details.location.city.trim() ||
-            !details.location.country.trim() ||
-            !details.location.postalCode.trim() ||
-            !details.location.state.trim() ||
-            !details.location.streetAddress.trim() ||
-            !details.location.venueName.trim()
+            !details.location?.city?.trim() ||
+            !details.location?.country?.trim() ||
+            !details.location?.postalCode?.trim() ||
+            !details.location?.state?.trim() ||
+            !details.location?.streetAddress?.trim() ||
+            !details.location?.venueName?.trim() ||
+            !policy.refundPolicy ||
+            !policy.visibility ||
+            uploadedImages.length === 0
 
         ) {
             setFormError('Please fill out all required fields before continuing.');
@@ -393,26 +413,30 @@ export default function CreateEventPage() {
                                             placeholder="Give Name"
                                             value={details.name}
                                             onChange={(e) => updateDetails('name', e.target.value)}
+                                            className={formSubmitted && !details.name.trim() ? 'border-red-500' : 'border-gray-300'}
                                         />
+                                        {formSubmitted && !details.name.trim() && (
+                                            <p className="text-sm text-red-500 mt-1">Name is required.</p>
+                                        )}
                                     </div>
 
                                     <div>
                                         <h3 className="mb-1">Description<span className="text-red-500">*</span></h3>
                                         <Textarea
-                                            placeholder="Provide a Description"
                                             value={details.description}
                                             onChange={(e) => updateDetails('description', e.target.value)}
+                                            error={formSubmitted && !details.description.trim()}
                                         />
+                                        {formSubmitted && !details.description.trim() && (
+                                            <p className="text-sm text-red-500 mt-1">Description is required.</p>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
                                             <h3 className="mb-1">Genre / Category<span className="text-red-500">*</span></h3>
-                                            <Select
-                                                value={details.category}
-                                                onChange={(value) => updateDetails('category', value)}
-                                            >
-                                                <SelectTrigger>{details.category || 'Category'}</SelectTrigger>
+                                            <Select onChange={(value) => updateDetails('category', value)} error={formSubmitted && !details.category}>
+                                                <SelectTrigger />
                                                 <SelectContent>
                                                     <SelectItem value="concert">Concert</SelectItem>
                                                     <SelectItem value="workshop">Workshop</SelectItem>
@@ -425,6 +449,7 @@ export default function CreateEventPage() {
                                             <TagsInput
                                                 tags={details.tags}
                                                 onChange={(tags) => updateDetails('tags', tags)}
+                                                error={formSubmitted && details.tags.length === 0}
                                             />
                                         </div>
                                     </div>
@@ -440,7 +465,7 @@ export default function CreateEventPage() {
                                                     <Select
                                                         value={details.location.eventType}
                                                         onChange={(value) => updateLocation('eventType', value)}
-
+                                                        error={formSubmitted && !details.location.eventType}
                                                     >
                                                         <SelectTrigger>{details.location.eventType}</SelectTrigger>
                                                         <SelectContent>
@@ -454,60 +479,104 @@ export default function CreateEventPage() {
 
                                             <div className="space-y-4">
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Venue Name<span className="text-red-500">*</span></h4>
+                                                    <h4 className="font-semibold mb-1">
+                                                        Venue Name<span className="text-red-500">*</span>
+                                                    </h4>
                                                     <Input
                                                         placeholder="Venue Name"
                                                         value={details.location.venueName}
                                                         onChange={(e) => updateLocation('venueName', e.target.value)}
+                                                        error={formSubmitted && !details.location.venueName.trim()}
                                                     />
+                                                    {formSubmitted && !details.location.venueName.trim() && (
+                                                        <p className="text-sm text-red-500 mt-1">Venue Name is required.</p>
+                                                    )}
                                                 </div>
+
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Street Address<span className="text-red-500">*</span></h4>
+                                                    <h4 className="font-semibold mb-1">
+                                                        Street Address<span className="text-red-500">*</span>
+                                                    </h4>
                                                     <Input
                                                         placeholder="Street Address"
                                                         value={details.location.streetAddress}
                                                         onChange={(e) => updateLocation('streetAddress', e.target.value)}
+                                                        error={formSubmitted && !details.location.streetAddress.trim()}
                                                     />
+                                                    {formSubmitted && !details.location.streetAddress.trim() && (
+                                                        <p className="text-sm text-red-500 mt-1">Street Address is required.</p>
+                                                    )}
                                                 </div>
+
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">City<span className="text-red-500">*</span></h4>
+                                                    <h4 className="font-semibold mb-1">
+                                                        City<span className="text-red-500">*</span>
+                                                    </h4>
                                                     <Input
                                                         placeholder="City"
                                                         value={details.location.city}
                                                         onChange={(e) => updateLocation('city', e.target.value)}
+                                                        error={formSubmitted && !details.location.city.trim()}
                                                     />
+                                                    {formSubmitted && !details.location.city.trim() && (
+                                                        <p className="text-sm text-red-500 mt-1">City is required.</p>
+                                                    )}
                                                 </div>
+
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">State/Province<span className="text-red-500">*</span></h4>
+                                                        <h4 className="font-semibold mb-1">
+                                                            State/Province<span className="text-red-500">*</span>
+                                                        </h4>
                                                         <Input
                                                             placeholder="State/Province"
                                                             value={details.location.state}
                                                             onChange={(e) => updateLocation('state', e.target.value)}
+                                                            error={formSubmitted && !details.location.state.trim()}
                                                         />
+                                                        {formSubmitted && !details.location.state.trim() && (
+                                                            <p className="text-sm text-red-500 mt-1">State is required.</p>
+                                                        )}
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">Postal Code<span className="text-red-500">*</span></h4>
+                                                        <h4 className="font-semibold mb-1">
+                                                            Postal Code<span className="text-red-500">*</span>
+                                                        </h4>
                                                         <Input
                                                             placeholder="Postal Code"
                                                             value={details.location.postalCode}
                                                             onChange={(e) => updateLocation('postalCode', e.target.value)}
+                                                            error={formSubmitted && !details.location.postalCode.trim()}
                                                         />
+                                                        {formSubmitted && !details.location.postalCode.trim() && (
+                                                            <p className="text-sm text-red-500 mt-1">Postal Code is required.</p>
+                                                        )}
                                                     </div>
                                                 </div>
+
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">Country<span className="text-red-500">*</span></h4>
+                                                    <h4 className="font-semibold mb-1">
+                                                        Country<span className="text-red-500">*</span>
+                                                    </h4>
                                                     <Input
                                                         placeholder="Country"
                                                         value={details.location.country}
                                                         onChange={(e) => updateLocation('country', e.target.value)}
+                                                        error={formSubmitted && !details.location.country.trim()}
                                                     />
+                                                    {formSubmitted && !details.location.country.trim() && (
+                                                        <p className="text-sm text-red-500 mt-1">Country is required.</p>
+                                                    )}
                                                 </div>
+
                                             </div>
                                         </div>
                                     </div>
 
-                                    <FileUpload onUpload={url => setUploadedImages([url])} />
+                                    <FileUpload
+                                        onUpload={(url) => setUploadedImages([url])}
+                                        hasError={uploadedImages.length === 0 && formSubmitted}
+                                    />
                                 </div>
 
                                 {/* Date & Time */}
@@ -655,8 +724,8 @@ export default function CreateEventPage() {
                                             <SelectTrigger>
                                                 {tier.type ? (
                                                     tier.type === 'free' ? 'Free' :
-                                                    tier.type === 'paid' ? 'Paid' :
-                                                    tier.type === 'donation' ? 'Donation' : 'Ticket Type'
+                                                        tier.type === 'paid' ? 'Paid' :
+                                                            tier.type === 'donation' ? 'Donation' : 'Ticket Type'
                                                 ) : 'Ticket Type'}
                                             </SelectTrigger>
                                             <SelectContent>
@@ -909,8 +978,8 @@ export default function CreateEventPage() {
                                 />
 
                                 <Select>
-                                    <h3 className="mb-1">Listing Visibility</h3>
-                                    <SelectTrigger>Visibility<span className="text-red-500">*</span></SelectTrigger>
+                                    <h3 className="mb-1">Listing Visibility<span className="text-red-500">*</span></h3>
+                                    <SelectTrigger>Visibility</SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="public">Public </SelectItem>
                                         <SelectItem value="private">Private</SelectItem>
@@ -929,7 +998,13 @@ export default function CreateEventPage() {
                         <Card>
                             <CardContent className="grid gap-4 p-6">
                                 <h2 className="font-semibold text-xl">Email Contact</h2>
-                                <Input type="email" placeholder="Public Contact Email" />
+                                <Input
+                                    type="email"
+                                    placeholder="Public Contact Email"
+                                    value={organizer.email || ''}
+                                    readOnly
+                                    className="cursor-not-allowed opacity-70"
+                                />
                                 <h2 className="font-semibold text-xl">Social Media Handles</h2>
                                 <Input
                                     placeholder="Instagram"
@@ -951,10 +1026,10 @@ export default function CreateEventPage() {
                             </CardContent>
                         </Card>
                         {formError && (
-                                <p className="text-red-500 text-sm mb-2">{formError}</p>
-                            )}
+                            <p className="text-red-500 text-sm mb-2">{formError}</p>
+                        )}
                         <div className='flex space-x-4 '>
-                           
+
                             <Button onClick={() => handleSubmit(false)}>Review</Button>
                         </div>
 

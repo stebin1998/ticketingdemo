@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, {  useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // Adjust path as needed
 import logo from '../assets/TicketMiLogo-H.png';
 import EventCard from '../components/EventCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,14 +9,30 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 const MyEvents = () => {
+    const { user } = useAuth();
     const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
+        console.log("🔥 User from useAuth:", user); // Add this
+
+        if (!user?.email) {
+            console.log("No user email yet, waiting...");
+            setLoading(false); // Stop loading if no user to fetch events for
+            setEvents([]);     // Clear events as fallback
+            return;
+        }
+
         const fetchEvents = async () => {
+            setLoading(true);
             try {
-                const response = await fetch('http://localhost:4556/events');
+                console.log("Fetching events for:", user.email);
+                const response = await fetch(`http://localhost:4556/events?organizerEmail=${encodeURIComponent(user.email)}`);
                 if (!response.ok) throw new Error('Failed to fetch events');
                 const data = await response.json();
+
+                console.log("Fetched events:", data);
 
                 const transformedEvents = data.map(event => ({
                     id: event._id,
@@ -32,22 +49,23 @@ const MyEvents = () => {
                 setEvents(transformedEvents);
             } catch (error) {
                 console.error('Error fetching events:', error);
+                setEvents([]);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchEvents();
-    }, []);
+    }, [user]);
 
-    const getCategoryIcon = (category) => {
-        return ({
-            music: faMusic,
-            art: faPalette,
-            food: faUtensils,
-            sports: faRunning,
-            film: faFilm,
-            comedy: faMicrophoneAlt
-        }[category?.toLowerCase()] || faTicketAlt);
-    };
+    const getCategoryIcon = (category) => ({
+        music: faMusic,
+        art: faPalette,
+        food: faUtensils,
+        sports: faRunning,
+        film: faFilm,
+        comedy: faMicrophoneAlt
+    }[category?.toLowerCase()] || faTicketAlt);
 
     const formatDate = (dateString) =>
         new Date(dateString).toLocaleDateString('en-US', {
@@ -57,6 +75,8 @@ const MyEvents = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+
+    if (loading) return <p className="text-center py-10 text-gray-600">Loading your events...</p>;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -89,7 +109,7 @@ const MyEvents = () => {
                 <h1 className="text-3xl font-bold text-[#2D2B8F] mb-8 text-center">My Events</h1>
 
                 {events.length === 0 ? (
-                    <p className="text-center text-gray-500">No events found.</p>
+                    <p className="text-center text-gray-500">You have not created any events yet.</p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {events.map(event => (
@@ -114,8 +134,6 @@ const MyEvents = () => {
                                     </Link>
                                 }
                             />
-
-
                         ))}
                     </div>
                 )}

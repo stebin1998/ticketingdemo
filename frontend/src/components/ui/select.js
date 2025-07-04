@@ -2,7 +2,7 @@ import React, { useState, createContext, useContext } from 'react';
 
 const SelectContext = createContext();
 
-export const Select = ({ children, onChange }) => {
+export const Select = ({ children, onChange, error = false }) => {
   const [selected, setSelected] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -13,20 +13,25 @@ export const Select = ({ children, onChange }) => {
   };
 
   return (
-    <SelectContext.Provider value={{ selected, open, setOpen, handleSelect }}>
+    <SelectContext.Provider value={{ selected, open, setOpen, handleSelect, error }}>
       <div className="relative">{children}</div>
     </SelectContext.Provider>
   );
 };
 
 export const SelectTrigger = () => {
-  const { selected, open, setOpen } = useContext(SelectContext);
+  const { selected, open, setOpen, error } = useContext(SelectContext);
+
   return (
     <div
       onClick={() => setOpen(!open)}
-      className="border rounded px-3 py-2 bg-white cursor-pointer flex items-center justify-between"
+      className={`border rounded px-3 py-2 bg-white cursor-pointer flex items-center justify-between ${
+        error ? 'border-red-500' : 'border-gray-300'
+      }`}
     >
-      <span className="text-gray-500 text-sm">{selected || 'Select an option'}</span>
+      <span className="text-gray-500 text-sm">
+        {selected || 'Select an option'}
+      </span>
       <span className="ml-2 text-gray-500">{open ? '▲' : '▼'}</span>
     </div>
   );

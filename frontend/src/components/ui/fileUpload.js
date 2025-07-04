@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import AuthService from '../../utils/authService';
 
-function FileUpload({ onUpload }) {
+function FileUpload({ onUpload, hasError = false }) {
     const [fileName, setFileName] = useState('');
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
@@ -11,7 +11,6 @@ function FileUpload({ onUpload }) {
         formData.append('image', file);
         setUploading(true);
         try {
-            // Get auth token for file upload
             const token = await AuthService.getAuthToken();
             const response = await fetch('http://localhost:4556/upload', {
                 method: 'POST',
@@ -57,14 +56,20 @@ function FileUpload({ onUpload }) {
         e.preventDefault();
     };
 
+    const borderColor = hasError
+        ? 'border-red-500 text-red-500 hover:border-red-600 hover:text-red-600'
+        : 'border-gray-400 text-gray-500 hover:border-indigo-500 hover:text-indigo-600';
+
     return (
         <div>
-            <h3 className="mb-2">Event Banner<span className="text-red-500">*</span></h3>
+            <h3 className="mb-2">
+                Event Banner<span className="text-red-500">*</span>
+            </h3>
             <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onClick={() => fileInputRef.current.click()}
-                className="relative cursor-pointer border-2 border-dashed border-gray-400 rounded-lg p-4 flex items-center justify-center text-gray-500 hover:border-indigo-500 hover:text-indigo-600 transition"
+                className={`relative cursor-pointer border-2 border-dashed rounded-lg p-4 flex items-center justify-center transition ${borderColor}`}
                 style={{ minHeight: '100px' }}
             >
                 {uploading ? (
@@ -75,8 +80,7 @@ function FileUpload({ onUpload }) {
                     <span>Drag & drop your image here, or click to select</span>
                 )}
 
-                {/* File specs label */}
-                <span className="absolute bottom-2 text-bold left-2 text-xs text-gray-400">
+                <span className="absolute bottom-2 left-2 text-xs text-gray-400 font-bold">
                     1200x600
                 </span>
             </div>
@@ -91,5 +95,6 @@ function FileUpload({ onUpload }) {
         </div>
     );
 }
+
 
 export default FileUpload;

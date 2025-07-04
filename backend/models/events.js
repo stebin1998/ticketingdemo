@@ -55,6 +55,7 @@ const eventSettingsSchema = new mongoose.Schema({
 });
 
 const organizerContactSchema = new mongoose.Schema({
+  email:{type: String},
   instagram: { type: String },
   facebook: { type: String },
   twitter: { type: String },

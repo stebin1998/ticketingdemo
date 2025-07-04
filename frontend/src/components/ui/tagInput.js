@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 
-export default function TagsInput({ tags, onChange }) {
+export default function TagsInput({ tags, onChange, error = false }) {
   const [input, setInput] = useState('');
   const inputRef = useRef();
 
@@ -9,23 +9,29 @@ export default function TagsInput({ tags, onChange }) {
       e.preventDefault();
       const newTag = input.trim().replace(/,$/, '');
       if (!tags.includes(newTag)) {
-        onChange([...tags, newTag]); // Use parent-provided onChange
+        onChange([...tags, newTag]);
       }
       setInput('');
     } else if (e.key === 'Backspace' && input === '' && tags.length > 0) {
       e.preventDefault();
-      onChange(tags.slice(0, -1)); // Remove last tag
+      onChange(tags.slice(0, -1));
     }
   };
 
   const removeTag = (index) => {
-    onChange(tags.filter((_, i) => i !== index)); // Remove by index
+    onChange(tags.filter((_, i) => i !== index));
   };
 
   return (
     <div>
-      <h3 className="mb-1">Tags<span className="text-red-500">*</span></h3>
-      <div className="flex flex-wrap items-center gap-2 border p-2 rounded min-h-[42px]">
+      <h3 className="mb-1">
+        Tags<span className="text-red-500">*</span>
+      </h3>
+      <div
+        className={`flex flex-wrap items-center gap-2 p-2 rounded min-h-[42px] ${
+          error ? 'border border-red-500' : 'border border-gray-300'
+        }`}
+      >
         {tags.map((tag, index) => (
           <span
             key={index}
@@ -53,6 +59,10 @@ export default function TagsInput({ tags, onChange }) {
           />
         </div>
       </div>
+      {error && (
+        <p className="text-sm text-red-500 mt-1">At least one tag is required.</p>
+      )}
     </div>
   );
 }
+

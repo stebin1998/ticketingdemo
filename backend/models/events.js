@@ -18,7 +18,7 @@ const ticketTierSchema = new mongoose.Schema({
 });
 
 const discountCodeSchema = new mongoose.Schema({
-  code: { type: String, required: true },
+  code: { type: String },
   tiers: [{ type: String }], 
   maxUses: { type: Number, default: 0 },
   discountAmount: { type: Number, default: 0 },

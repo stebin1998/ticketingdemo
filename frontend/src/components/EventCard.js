@@ -15,7 +15,17 @@ const EventCard = ({
   formatDate = () => '',
   getCategoryIcon,
   getImage,
+  actions,
 }) => {
+
+  // Only show venueName and city
+  const formatLocation = (location) => {
+    if (!location) return 'Unknown';
+    if (typeof location === 'string') return location;
+
+    return [location.venueName, location.city].filter(Boolean).join(', ');
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
       <div className="h-48 bg-gray-200 flex items-center justify-center">
@@ -31,15 +41,25 @@ const EventCard = ({
           <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" /> {formatDate(event.date)}
         </p>
         <p className="text-sm text-gray-600 flex items-center mt-1">
-          <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1" /> {event.location}
+          <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1" /> {formatLocation(event.location)}
         </p>
         <p className="text-sm text-blue-600 font-semibold mt-1">
-          ${event.price.toFixed(2)} <span className="text-xs text-gray-500 ml-1">(lowest)</span>
+          {event.price === 0 ? (
+            "Free"
+          ) : (
+            <>
+              ${event.price.toFixed(2)} <span className="text-xs text-gray-500 ml-1">(lowest)</span>
+            </>
+          )}
         </p>
         <p className="text-sm text-gray-500 mt-1">by {event.organizer}</p>
-        <button className="bg-[#5E4DC3] text-white rounded w-full py-2 mt-3 hover:bg-opacity-90 transition-colors">
-          Buy Ticket
-        </button>
+        {actions ? (
+          <div className="mt-3">{actions}</div>
+        ) : (
+          <button className="bg-[#5E4DC3] text-white rounded w-full py-2 mt-3 hover:bg-opacity-90 transition-colors">
+            Buy Ticket
+          </button>
+        )}
       </div>
     </div>
   );
@@ -53,13 +73,24 @@ EventCard.propTypes = {
       PropTypes.string,
       PropTypes.instanceOf(Date),
     ]),
-    location: PropTypes.string,
+    location: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        eventType: PropTypes.string,
+        venueName: PropTypes.string,
+        streetAddress: PropTypes.string,
+        city: PropTypes.string,
+        postalCode: PropTypes.string,
+        country: PropTypes.string,
+      }),
+    ]),
     price: PropTypes.number,
     organizer: PropTypes.string,
   }),
   formatDate: PropTypes.func,
   getCategoryIcon: PropTypes.func,
   getImage: PropTypes.func,
+  actions: PropTypes.node,
 };
 
 export default EventCard;

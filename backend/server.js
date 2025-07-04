@@ -178,12 +178,12 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Set up storage for multer
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 const upload = multer({ storage: storage });
 
@@ -252,9 +252,22 @@ app.delete('/events/:id', verifyFirebaseToken, attachUserRole, requireSeller, as
         res.status(500).json({ error: error.message });
     }
 });
+app.patch('/events/:id', async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
 
-// Image upload endpoint (protected - requires authentication)
-app.post('/upload', verifyFirebaseToken, upload.single('image'), (req, res) => {
+    try {
+        const updatedEvent = await Event.findByIdAndUpdate(id, updateData, { new: true });
+        if (!updatedEvent) return res.status(404).send('Event not found');
+        res.json(updatedEvent);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Failed to update event');
+    }
+});
+
+// Image upload endpoint
+app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }

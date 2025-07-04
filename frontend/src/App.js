@@ -8,10 +8,13 @@ import Signup from './pages/Signup';
 import SellerSignup from './pages/SellerSignup';
 import UpgradeToSeller from './pages/UpgradeToSeller';
 import Dashboard from './pages/Dashboard';
-import Demo from './pages/Demo';
+
 import CreateEventPage from './pages/CreateEvent';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
+import EventResults from './pages/EventResult';
+import MyEvents from './pages/MyEvents';
+import EditEvent from './pages/EditEvent';
 import './index.css';
 
 const pageVariants = {
@@ -109,22 +112,6 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
-          path="/demo"
-          element={
-            <PrivateRoute>
-              <motion.div
-                initial="initial"
-                animate="in"
-                exit="out"
-                variants={pageVariants}
-                transition={pageTransition}
-              >
-                <Demo />
-              </motion.div>
-            </PrivateRoute>
-          }
-        />
-        <Route
           path="/createEvent"
           element={
             <SellerRoute>
@@ -167,6 +154,49 @@ const AnimatedRoutes = () => {
               transition={pageTransition}
             >
               <Dashboard />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/my-events"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <MyEvents />
+            </motion.div>
+          }
+        />
+
+        <Route
+          path="/edit-event/:id"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <EditEvent />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/event-results/:eventId"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <EventResults />
             </motion.div>
           }
         />

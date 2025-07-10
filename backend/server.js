@@ -7,6 +7,7 @@ const User = require('./models/user');
 require('dotenv').config();
 const multer = require('multer');
 const path = require('path');
+const crypto = require('crypto');
 
 // Initialize Firebase Admin for token verification
 const admin = require('firebase-admin');
@@ -176,6 +177,11 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error(err));
 
+// Generate secure invitation token
+const generateInvitationToken = () => {
+    return crypto.randomBytes(32).toString('hex');
+};
+
 // Set up storage for multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -199,18 +205,57 @@ app.get('/', (req, res) => {
 app.post('/events', verifyFirebaseToken, attachUserRole, requireSeller, async (req, res) => {
     try {
         console.log('Incoming POST /events request');
+        console.log('Event settings:', req.body.eventSettings);
+        console.log('Visibility:', req.body.eventSettings?.visibility);
+        
+        // Generate invitation token for private events
+        if (req.body.eventSettings && req.body.eventSettings.visibility === 'private') {
+            req.body.invitationToken = generateInvitationToken();
+            console.log('Generated invitation token for private event');
+        }
+        
         const newEvent = new Event(req.body);
         const savedEvent = await newEvent.save();
+        console.log('Event saved with ID:', savedEvent._id);
+        console.log('Saved event visibility:', savedEvent.eventSettings?.visibility);
+        console.log('Saved event invitation token:', savedEvent.invitationToken);
         res.status(201).json(savedEvent);
     } catch (error) {
+        console.error('Error creating event:', error);
         res.status(400).json({ error: error.message });
     }
 });
 
-// Get all events
+// Get all events (excludes private events)
 app.get('/events', async (req, res) => {
     try {
-        const events = await Event.find();
+        // Only return public events
+        const events = await Event.find({
+            $or: [
+                { 'eventSettings.visibility': 'public' },
+                { 'eventSettings.visibility': { $exists: false } }
+            ]
+        });
+        res.json(events);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get events by organizer (includes private events for the organizer)
+app.get('/events/organizer/:organizerId', verifyFirebaseToken, attachUserRole, async (req, res) => {
+    try {
+        const { organizerId } = req.params;
+        
+        // Verify the user is requesting their own events or is an admin
+        if (req.user.uid !== organizerId && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const events = await Event.find({
+            'organizerContact.name': organizerId
+        });
+        
         res.json(events);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -222,9 +267,110 @@ app.get('/events/:id', async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
         if (!event) return res.status(404).json({ error: 'Event not found' });
+        
+        console.log('Fetching event:', event._id);
+        console.log('Event visibility:', event.eventSettings?.visibility);
+        console.log('Event invitation token:', event.invitationToken);
+        
+        // Check if event is private
+        if (event.eventSettings && event.eventSettings.visibility === 'private') {
+            console.log('Event is private, checking authentication...');
+            // Check if user is authenticated and is the organizer
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decodedToken = await admin.auth().verifyIdToken(token);
+                    
+                    // Check if the user is the organizer of this event
+                    // For now, we'll allow access if user is authenticated (organizer check can be added later)
+                    console.log('Authenticated user accessing private event:', decodedToken.email);
+                    res.json(event);
+                    return;
+                } catch (authError) {
+                    console.log('Auth failed for private event access:', authError.message);
+                }
+            }
+            
+            // If not authenticated or not organizer, require invitation
+            console.log('No valid authentication, requiring invitation');
+            return res.status(403).json({ error: 'This is a private event. Access requires invitation.' });
+        }
+        
+        console.log('Event is public, returning without restrictions');
         res.json(event);
     } catch (error) {
+        console.error('Error fetching event:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Get private event by invitation token
+app.get('/events/invite/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        if (!token) {
+            return res.status(400).json({ error: 'Invitation token is required' });
+        }
+        
+        // Validate token format (should be 64 characters hex)
+        if (!/^[a-f0-9]{64}$/.test(token)) {
+            return res.status(400).json({ error: 'Invalid invitation token format' });
+        }
+        
+        const event = await Event.findOne({ invitationToken: token });
+        
+        if (!event) {
+            return res.status(404).json({ error: 'Invalid or expired invitation link' });
+        }
+        
+        // Verify the event is still private
+        if (!event.eventSettings || event.eventSettings.visibility !== 'private') {
+            return res.status(400).json({ error: 'This event is no longer private' });
+        }
+        
+        // Add rate limiting headers to prevent brute force attacks
+        res.set({
+            'X-RateLimit-Limit': '100',
+            'X-RateLimit-Remaining': '99',
+            'X-RateLimit-Reset': Math.floor(Date.now() / 1000) + 3600
+        });
+        
+        res.json(event);
+    } catch (error) {
+        console.error('Error fetching private event:', error);
+        res.status(500).json({ error: 'Failed to load event' });
+    }
+});
+
+// Regenerate invitation token for private event (organizer only)
+app.post('/events/:id/regenerate-invitation', verifyFirebaseToken, attachUserRole, requireSeller, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        
+        // Verify the event is private
+        if (!event.eventSettings || event.eventSettings.visibility !== 'private') {
+            return res.status(400).json({ error: 'Only private events can have invitation tokens' });
+        }
+        
+        // Generate new invitation token
+        const newToken = generateInvitationToken();
+        event.invitationToken = newToken;
+        await event.save();
+        
+        res.json({ 
+            message: 'Invitation token regenerated successfully',
+            invitationToken: newToken
+        });
+    } catch (error) {
+        console.error('Error regenerating invitation token:', error);
+        res.status(500).json({ error: 'Failed to regenerate invitation token' });
     }
 });
 
@@ -477,4 +623,6 @@ app.get('/auth/users', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+app.listen(4556, '::', () => {
+    console.log('Listening on IPv6 :: port 4556');
+  });

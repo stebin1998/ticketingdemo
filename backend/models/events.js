@@ -79,6 +79,7 @@ const eventSchema = new mongoose.Schema({
   discountCodes: [discountCodeSchema],
   eventSettings: eventSettingsSchema,
   organizerContact: organizerContactSchema,
+  invitationToken: { type: String, unique: true, sparse: true },
 }, {
   timestamps: true,
 });

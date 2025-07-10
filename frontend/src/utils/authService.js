@@ -2,7 +2,8 @@
 import { auth } from '../firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
-const API_BASE_URL = 'http://localhost:4556';
+// const API_BASE_URL = 'http://192.168.2.13:4556';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export class AuthService {
   static currentUser = null;
@@ -459,9 +460,7 @@ export class AuthService {
       this.userProfile = data.user;
       
       console.log('✅ Successfully upgraded to seller');
-      
-      // Trigger state update to refresh UI components
-      this.triggerStateUpdate();
+      this.notifyListeners();
       
       return data.user;
     } catch (error) {

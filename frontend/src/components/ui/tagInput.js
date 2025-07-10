@@ -24,14 +24,8 @@ export default function TagsInput({ tags, onChange, error = false }) {
 
   return (
     <div>
-      <h3 className="mb-1">
-        Tags<span className="text-red-500">*</span>
-      </h3>
-      <div
-        className={`flex flex-wrap items-center gap-2 p-2 rounded min-h-[42px] ${
-          error ? 'border border-red-500' : 'border border-gray-300'
-        }`}
-      >
+      <h3 className="mb-1">Tags<span className="text-red-500">*</span></h3>
+      <div className={`flex flex-wrap items-center gap-2 border p-2 rounded min-h-[42px] ${error ? 'border-red-500' : 'border-gray-300'}`}>
         {tags.map((tag, index) => (
           <span
             key={index}

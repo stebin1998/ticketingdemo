@@ -13,6 +13,8 @@ import EventCard from '../components/EventCard';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const Dashboard = () => {
     // Keep authentication logic from HEAD
     const { isAuthenticated, loading: authLoading } = useAuth();
@@ -95,11 +97,13 @@ const Dashboard = () => {
         return `${dayDate} · ${startTimeStr} - ${endTimeStr}`;
     }
 
+
+
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:4556/events');
+            const response = await fetch(`${API_BASE_URL}/events`);
             if (!response.ok) {
                 throw new Error('Failed to fetch events');
             }
@@ -138,6 +142,7 @@ const Dashboard = () => {
                 });
 
 
+
             setEvents(transformedEvents);
         } catch (err) {
             setError("Failed to load events. Please try again.");
@@ -173,6 +178,8 @@ const Dashboard = () => {
                 : selectedEvent.description.slice(0, MAX_LENGTH) + '...'
             : '';
 
+    useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
     const handleSearchChange = (value) => {
         setSearchQuery(value);
     };
@@ -195,12 +202,12 @@ const Dashboard = () => {
                 locationFilter.trim() === '' ||
                 locationString.includes(locationFilter.toLowerCase());
 
+
             return matchesSearch && matchesLocation;
         });
     }, [events, searchQuery, locationFilter]);
 
-    // Show loading while auth is loading or events are loading (from HEAD)
-    if (authLoading || isLoading) {
+    if (isLoading) {
         return (
             <div className="min-h-screen bg-ticketmi-neutral flex flex-col">
                 <Header />
@@ -228,6 +235,7 @@ const Dashboard = () => {
             </div>
         );
     }
+
     return (
         <ErrorBoundary>
             <div className="min-h-screen bg-ticketmi-neutral flex flex-col">

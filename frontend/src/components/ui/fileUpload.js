@@ -62,9 +62,7 @@ function FileUpload({ onUpload, hasError = false }) {
 
     return (
         <div>
-            <h3 className="mb-2">
-                Event Banner<span className="text-red-500">*</span>
-            </h3>
+            <h3 className="mb-2">Event Banner<span className="text-red-500">*</span></h3>
             <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}

@@ -15,6 +15,7 @@ import Cart from './pages/Cart';
 import EventResults from './pages/EventResult';
 import MyEvents from './pages/MyEvents';
 import EditEvent from './pages/EditEvent';
+import InviteEvent from './pages/InviteEvent';
 import './index.css';
 
 const pageVariants = {
@@ -230,6 +231,20 @@ const AnimatedRoutes = () => {
                 <Cart />
               </motion.div>
             </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invite/:token"
+          element={
+            <motion.div
+              initial="initial"
+              animate="in"
+              exit="out"
+              variants={pageVariants}
+              transition={pageTransition}
+            >
+              <InviteEvent />
+            </motion.div>
           }
         />
       </Routes>

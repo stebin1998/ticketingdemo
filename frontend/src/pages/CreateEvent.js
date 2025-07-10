@@ -37,20 +37,7 @@ export default function CreateEventPage() {
     });
 
     const [formError, setFormError] = useState('');
-    const [uploadedImages, setUploadedImages] = useState([]);
     const [formSubmitted, setFormSubmitted] = useState(false);
-    const { user, profile, authenticated } = useAuth();
-    console.log("🔍 useAuth state:", { user, profile, authenticated });
-
-    useEffect(() => {
-        if (user) {
-          console.log("📧 Setting organizer email from user:", user);
-          setOrganizer(prev => ({
-            ...prev,
-            email: user,
-          }));
-        }
-      }, [user]);
 
     const updateDetails = (field, value) => {
         setDetails((prev) => ({ ...prev, [field]: value }));
@@ -99,7 +86,7 @@ export default function CreateEventPage() {
     const [tiers, setTiers] = useState([
         {
             name: '',
-            type: 'free',
+            type: '',
             price: '',
             quantity: '',
             description: '',
@@ -118,7 +105,7 @@ export default function CreateEventPage() {
     };
 
     const addTier = () => {
-        setTiers([...tiers, { name: '', type: 'free', price: '', quantity: '', description: '', active: true, public: true }]);
+        setTiers([...tiers, { name: '', type: '', price: '', quantity: '', description: '', active: true, public: true }]);
     };
 
     // Discount Codes
@@ -163,7 +150,7 @@ export default function CreateEventPage() {
     const [policy, setPolicy] = useState({
         refundPolicy: '',
         refundPolicyText: '',
-        visibility: 'public',
+        visibility: '',
         status: 'draft',
     });
 
@@ -180,7 +167,7 @@ export default function CreateEventPage() {
         instagram: '',
         facebook: '',
         twitter: '',
-      });
+    });
 
     // Organizer Handlers
     const updateOrganizer = (field, value) => {
@@ -219,31 +206,94 @@ export default function CreateEventPage() {
     }, [sections]);
 
     // Image upload state
+    const [uploadedImages, setUploadedImages] = useState([]);
 
+    // Remove invitation modal state since we'll show it on the results page
+
+    // Helper: map required fields to their section ids
+    const fieldSectionMap = [
+        // Event Details
+        { field: !details.name.trim(), section: 'event-details' },
+        { field: !details.description.trim(), section: 'event-details' },
+        { field: !details.category, section: 'event-details' },
+        { field: details.tags.length === 0, section: 'event-details' },
+        { field: !details.location.eventType, section: 'event-details' },
+        { field: !details.location.venueName.trim(), section: 'event-details' },
+        { field: !details.location.streetAddress.trim(), section: 'event-details' },
+        { field: !details.location.city.trim(), section: 'event-details' },
+        { field: !details.location.state.trim(), section: 'event-details' },
+        { field: !details.location.postalCode.trim(), section: 'event-details' },
+        { field: !details.location.country.trim(), section: 'event-details' },
+        { field: !eventSlots[0].startDate, section: 'event-details' },
+        { field: !eventSlots[0].startTime, section: 'event-details' },
+        { field: !eventSlots[0].endDate, section: 'event-details' },
+        { field: !eventSlots[0].endTime, section: 'event-details' },
+        // Ticket Tiers (check first tier only for required fields)
+        { field: !tiers[0]?.name, section: 'ticket-tiers' },
+        { field: !tiers[0]?.type, section: 'ticket-tiers' },
+        { field: !tiers[0]?.price, section: 'ticket-tiers' },
+        { field: !tiers[0]?.quantity, section: 'ticket-tiers' },
+        { field: !tiers[0]?.description, section: 'ticket-tiers' },
+        // Event Policy
+        { field: !policy.refundPolicy, section: 'event-settings' },
+        { field: !policy.visibility, section: 'event-settings' },
+        { field: !uploadedImages.length, section: 'event-details' },
+    ];
+
+    function scrollToSection(sectionId) {
+        const el = document.getElementById(sectionId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActiveSection(sectionId);
+        }
+    }
 
     // Submit / Save Draft Handlers
     const handleSubmit = async (draft = false) => {
         setFormSubmitted(true);
+        const firstMissingSection = fieldSectionMap.find(item => item.field)?.section;
+        // Only validate discount codes if the user has started filling them out
+        const hasIncompleteDiscountCodes = codes.some(code => {
+          // Check if user has started filling out this specific discount code (has any non-empty value)
+          const hasStartedFilling = code.code.trim() || code.maxUses.trim() || code.discountAmount.trim() || code.startDate.trim() || code.endDate.trim();
+          
+          // If they started filling, check if all required fields are complete
+          if (hasStartedFilling) {
+            return !code.code.trim() || !code.maxUses.trim() || !code.discountAmount.trim() || !code.startDate.trim() || !code.endDate.trim();
+          }
+          
+          return false; // Haven't started filling this code, so no validation needed
+        });
         if (
-            !details.name?.trim() ||
-            !details.description?.trim() ||
+            !details.name.trim() ||
+            !details.description.trim() ||
             !details.category ||
             details.tags.length === 0 ||
-            !details.location?.city?.trim() ||
-            !details.location?.country?.trim() ||
-            !details.location?.postalCode?.trim() ||
-            !details.location?.state?.trim() ||
-            !details.location?.streetAddress?.trim() ||
-            !details.location?.venueName?.trim() ||
+            !details.location.eventType ||
+            !details.location.venueName.trim() ||
+            !details.location.streetAddress.trim() ||
+            !details.location.city.trim() ||
+            !details.location.state.trim() ||
+            !details.location.postalCode.trim() ||
+            !details.location.country.trim() ||
+            !eventSlots[0].startDate ||
+            !eventSlots[0].startTime ||
+            !eventSlots[0].endDate ||
+            !eventSlots[0].endTime ||
+            !tiers[0]?.name ||
+            !tiers[0]?.type ||
+            !tiers[0]?.price ||
+            !tiers[0]?.quantity ||
+            !tiers[0]?.description ||
             !policy.refundPolicy ||
             !policy.visibility ||
-            uploadedImages.length === 0
-
+            !uploadedImages.length ||
+            hasIncompleteDiscountCodes
         ) {
             setFormError('Please fill out all required fields before continuing.');
+            if (firstMissingSection) scrollToSection(firstMissingSection);
             return;
         }
-
         setFormError('');
         try {
             // Debug log for eventSlots
@@ -319,12 +369,43 @@ export default function CreateEventPage() {
 
             const createdEvent = await response.json();
 
-
+            // Navigate to event results page (invitation info will be shown there for private events)
             navigate(`/event-results/${createdEvent._id}`);
 
         } catch (error) {
             alert(error.message);
         }
+    };
+
+    // Helper function to check if a specific discount code has been started
+    const hasStartedDiscountCode = (code) => {
+      return code.code.trim() || code.maxUses.trim() || code.discountAmount.trim() || code.startDate.trim() || code.endDate.trim();
+    };
+
+    // Helper function to check if a specific discount code field is missing
+    const isDiscountCodeFieldMissing = (code, fieldName) => {
+      return hasStartedDiscountCode(code) && !code[fieldName].trim();
+    };
+
+    // Helper function to check if a section has missing required fields
+    const getSectionErrors = (sectionId) => {
+      switch (sectionId) {
+        case 'event-details':
+          return !details.name.trim() || !details.description.trim() || !details.category || 
+                 details.tags.length === 0 || !details.location.eventType || 
+                 !details.location.venueName.trim() || !details.location.streetAddress.trim() || 
+                 !details.location.city.trim() || !details.location.state.trim() || 
+                 !details.location.postalCode.trim() || !details.location.country.trim() || 
+                 !eventSlots[0].startDate || !eventSlots[0].startTime || 
+                 !eventSlots[0].endDate || !eventSlots[0].endTime || !uploadedImages.length;
+        case 'ticket-tiers':
+          return !tiers[0]?.name || !tiers[0]?.type || !tiers[0]?.price || 
+                 !tiers[0]?.quantity || !tiers[0]?.description;
+        case 'event-settings':
+          return !policy.refundPolicy || !policy.visibility;
+        default:
+          return false;
+      }
     };
 
 
@@ -369,28 +450,50 @@ export default function CreateEventPage() {
                             {/* Vertical progress line */}
                             <div className="absolute left-3 top-6 bottom-6 w-1 bg-gray-200 rounded-full" />
                             <div className="space-y-6 relative z-10">
-                                {sections.map((section, idx) => (
-                                    <a
-                                        key={section.id}
-                                        href={`#${section.id}`}
-                                        onClick={(e) => {
-                                            e.preventDefault(); // prevent default jump
-                                            const el = document.getElementById(section.id);
-                                            if (el) {
-                                                el.scrollIntoView({ behavior: 'smooth', block: 'start' }); // smooth scroll
-                                                setActiveSection(section.id); // update active state immediately
-                                            }
-                                        }}
-                                        className={`group flex items-center gap-4 transition-colors duration-300 ${activeSection === section.id ? 'text-blue-600 font-semibold' : 'text-gray-600'
+                                {sections.map((section, idx) => {
+                                    const hasErrors = formSubmitted && getSectionErrors(section.id);
+                                    return (
+                                        <a
+                                            key={section.id}
+                                            href={`#${section.id}`}
+                                            onClick={(e) => {
+                                                e.preventDefault(); // prevent default jump
+                                                const el = document.getElementById(section.id);
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' }); // smooth scroll
+                                                    setActiveSection(section.id); // update active state immediately
+                                                }
+                                            }}
+                                            className={`group flex items-center gap-4 transition-colors duration-300 ${
+                                                activeSection === section.id 
+                                                  ? hasErrors 
+                                                    ? 'text-red-600 font-semibold' 
+                                                    : 'text-blue-600 font-semibold'
+                                                  : hasErrors 
+                                                    ? 'text-red-500' 
+                                                    : 'text-gray-600'
                                             }`}
-                                    >
-                                        <div
-                                            className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${activeSection === section.id ? 'bg-blue-600 border-blue-600 scale-110' : 'bg-white border-gray-400'
+                                        >
+                                            <div
+                                                className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${
+                                                    activeSection === section.id 
+                                                      ? hasErrors 
+                                                        ? 'bg-red-500 border-red-500 scale-110' 
+                                                        : 'bg-blue-600 border-blue-600 scale-110'
+                                                      : hasErrors 
+                                                        ? 'bg-red-100 border-red-500' 
+                                                        : 'bg-white border-gray-400'
                                                 }`}
-                                        ></div>
-                                        <span className="group-hover:underline">{section.label}</span>
-                                    </a>
-                                ))}
+                                            ></div>
+                                            <span className="group-hover:underline flex items-center gap-2">
+                                                {section.label}
+                                                {hasErrors && (
+                                                    <span className="text-red-500 text-xs">-</span>
+                                                )}
+                                            </span>
+                                        </a>
+                                    );
+                                })}
                             </div>
                         </nav>
                     </div>
@@ -435,8 +538,12 @@ export default function CreateEventPage() {
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
                                             <h3 className="mb-1">Genre / Category<span className="text-red-500">*</span></h3>
-                                            <Select onChange={(value) => updateDetails('category', value)} error={formSubmitted && !details.category}>
-                                                <SelectTrigger />
+                                            <Select
+                                                value={details.category}
+                                                onChange={(value) => updateDetails('category', value)}
+                                                error={formSubmitted && !details.category}
+                                            >
+                                                <SelectTrigger>{details.category || 'Category'}</SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="concert">Concert</SelectItem>
                                                     <SelectItem value="workshop">Workshop</SelectItem>
@@ -479,14 +586,12 @@ export default function CreateEventPage() {
 
                                             <div className="space-y-4">
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">
-                                                        Venue Name<span className="text-red-500">*</span>
-                                                    </h4>
+                                                    <h4 className="font-semibold mb-1">Venue Name<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Venue Name"
                                                         value={details.location.venueName}
                                                         onChange={(e) => updateLocation('venueName', e.target.value)}
-                                                        error={formSubmitted && !details.location.venueName.trim()}
+                                                        className={formSubmitted && !details.location.venueName.trim() ? 'border-red-500' : 'border-gray-300'}
                                                     />
                                                     {formSubmitted && !details.location.venueName.trim() && (
                                                         <p className="text-sm text-red-500 mt-1">Venue Name is required.</p>
@@ -494,14 +599,12 @@ export default function CreateEventPage() {
                                                 </div>
 
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">
-                                                        Street Address<span className="text-red-500">*</span>
-                                                    </h4>
+                                                    <h4 className="font-semibold mb-1">Street Address<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Street Address"
                                                         value={details.location.streetAddress}
                                                         onChange={(e) => updateLocation('streetAddress', e.target.value)}
-                                                        error={formSubmitted && !details.location.streetAddress.trim()}
+                                                        className={formSubmitted && !details.location.streetAddress.trim() ? 'border-red-500' : 'border-gray-300'}
                                                     />
                                                     {formSubmitted && !details.location.streetAddress.trim() && (
                                                         <p className="text-sm text-red-500 mt-1">Street Address is required.</p>
@@ -509,14 +612,12 @@ export default function CreateEventPage() {
                                                 </div>
 
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">
-                                                        City<span className="text-red-500">*</span>
-                                                    </h4>
+                                                    <h4 className="font-semibold mb-1">City<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="City"
                                                         value={details.location.city}
                                                         onChange={(e) => updateLocation('city', e.target.value)}
-                                                        error={formSubmitted && !details.location.city.trim()}
+                                                        className={formSubmitted && !details.location.city.trim() ? 'border-red-500' : 'border-gray-300'}
                                                     />
                                                     {formSubmitted && !details.location.city.trim() && (
                                                         <p className="text-sm text-red-500 mt-1">City is required.</p>
@@ -525,28 +626,24 @@ export default function CreateEventPage() {
 
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">
-                                                            State/Province<span className="text-red-500">*</span>
-                                                        </h4>
+                                                        <h4 className="font-semibold mb-1">State/Province<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             placeholder="State/Province"
                                                             value={details.location.state}
                                                             onChange={(e) => updateLocation('state', e.target.value)}
-                                                            error={formSubmitted && !details.location.state.trim()}
+                                                            className={formSubmitted && !details.location.state.trim() ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                         {formSubmitted && !details.location.state.trim() && (
                                                             <p className="text-sm text-red-500 mt-1">State is required.</p>
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-semibold mb-1">
-                                                            Postal Code<span className="text-red-500">*</span>
-                                                        </h4>
+                                                        <h4 className="font-semibold mb-1">Postal Code<span className="text-red-500">*</span></h4>
                                                         <Input
                                                             placeholder="Postal Code"
                                                             value={details.location.postalCode}
                                                             onChange={(e) => updateLocation('postalCode', e.target.value)}
-                                                            error={formSubmitted && !details.location.postalCode.trim()}
+                                                            className={formSubmitted && !details.location.postalCode.trim() ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                         {formSubmitted && !details.location.postalCode.trim() && (
                                                             <p className="text-sm text-red-500 mt-1">Postal Code is required.</p>
@@ -555,14 +652,12 @@ export default function CreateEventPage() {
                                                 </div>
 
                                                 <div>
-                                                    <h4 className="font-semibold mb-1">
-                                                        Country<span className="text-red-500">*</span>
-                                                    </h4>
+                                                    <h4 className="font-semibold mb-1">Country<span className="text-red-500">*</span></h4>
                                                     <Input
                                                         placeholder="Country"
                                                         value={details.location.country}
                                                         onChange={(e) => updateLocation('country', e.target.value)}
-                                                        error={formSubmitted && !details.location.country.trim()}
+                                                        className={formSubmitted && !details.location.country.trim() ? 'border-red-500' : 'border-gray-300'}
                                                     />
                                                     {formSubmitted && !details.location.country.trim() && (
                                                         <p className="text-sm text-red-500 mt-1">Country is required.</p>
@@ -573,10 +668,7 @@ export default function CreateEventPage() {
                                         </div>
                                     </div>
 
-                                    <FileUpload
-                                        onUpload={(url) => setUploadedImages([url])}
-                                        hasError={uploadedImages.length === 0 && formSubmitted}
-                                    />
+                                    <FileUpload onUpload={url => setUploadedImages([url])} hasError={formSubmitted && !uploadedImages.length} />
                                 </div>
 
                                 {/* Date & Time */}
@@ -606,11 +698,13 @@ export default function CreateEventPage() {
                                                             type="date"
                                                             value={slot.startDate}
                                                             onChange={(e) => updateSlot(index, "startDate", e.target.value)}
+                                                            className={formSubmitted && !slot.startDate ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                         <Input
                                                             type="time"
                                                             value={slot.startTime}
                                                             onChange={(e) => updateSlot(index, "startTime", e.target.value)}
+                                                            className={formSubmitted && !slot.startTime ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                     <div className="flex flex-col gap-2">
@@ -619,11 +713,13 @@ export default function CreateEventPage() {
                                                             type="date"
                                                             value={slot.endDate}
                                                             onChange={(e) => updateSlot(index, "endDate", e.target.value)}
+                                                            className={formSubmitted && !slot.endDate ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                         <Input
                                                             type="time"
                                                             value={slot.endTime}
                                                             onChange={(e) => updateSlot(index, "endTime", e.target.value)}
+                                                            className={formSubmitted && !slot.endTime ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                     <button
@@ -655,6 +751,7 @@ export default function CreateEventPage() {
                                                             placeholder="Start Date"
                                                             value={eventSlots[0]?.startDate || ''}
                                                             onChange={e => updateSlot(0, 'startDate', e.target.value)}
+                                                            className={formSubmitted && !eventSlots[0]?.startDate ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                     <div>
@@ -664,6 +761,7 @@ export default function CreateEventPage() {
                                                             placeholder="End Date"
                                                             value={eventSlots[0]?.endDate || ''}
                                                             onChange={e => updateSlot(0, 'endDate', e.target.value)}
+                                                            className={formSubmitted && !eventSlots[0]?.endDate ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                 </div>
@@ -678,6 +776,7 @@ export default function CreateEventPage() {
                                                             placeholder="Start Time"
                                                             value={eventSlots[0]?.startTime || ''}
                                                             onChange={e => updateSlot(0, 'startTime', e.target.value)}
+                                                            className={formSubmitted && !eventSlots[0]?.startTime ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                     <div>
@@ -687,6 +786,7 @@ export default function CreateEventPage() {
                                                             placeholder="End Time"
                                                             value={eventSlots[0]?.endTime || ''}
                                                             onChange={e => updateSlot(0, 'endTime', e.target.value)}
+                                                            className={formSubmitted && !eventSlots[0]?.endTime ? 'border-red-500' : 'border-gray-300'}
                                                         />
                                                     </div>
                                                 </div>
@@ -714,20 +814,16 @@ export default function CreateEventPage() {
                                             placeholder="Tier Name"
                                             value={tier.name}
                                             onChange={(e) => updateTier(index, 'name', e.target.value)}
+                                            className={formSubmitted && !tier.name ? 'border-red-500' : 'border-gray-300'}
                                         />
 
                                         {/* Ticket Type Dropdown */}
                                         <Select
                                             value={tier.type}
                                             onChange={(value) => updateTier(index, 'type', value)}
+                                            error={formSubmitted && !tier.type}
                                         >
-                                            <SelectTrigger>
-                                                {tier.type ? (
-                                                    tier.type === 'free' ? 'Free' :
-                                                        tier.type === 'paid' ? 'Paid' :
-                                                            tier.type === 'donation' ? 'Donation' : 'Ticket Type'
-                                                ) : 'Ticket Type'}
-                                            </SelectTrigger>
+                                            <SelectTrigger>Ticket Type</SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="free">Free</SelectItem>
                                                 <SelectItem value="paid">Paid</SelectItem>
@@ -740,6 +836,7 @@ export default function CreateEventPage() {
                                             type="number"
                                             value={tier.price}
                                             onChange={(e) => updateTier(index, 'price', e.target.value)}
+                                            className={formSubmitted && !tier.price ? 'border-red-500' : 'border-gray-300'}
                                         />
 
                                         <Input
@@ -747,12 +844,14 @@ export default function CreateEventPage() {
                                             type="number"
                                             value={tier.quantity}
                                             onChange={(e) => updateTier(index, 'quantity', e.target.value)}
+                                            className={formSubmitted && !tier.quantity ? 'border-red-500' : 'border-gray-300'}
                                         />
 
                                         <Textarea
                                             placeholder="Description"
                                             value={tier.description}
                                             onChange={(e) => updateTier(index, 'description', e.target.value)}
+                                            className={formSubmitted && !tier.description ? 'border-red-500' : 'border-gray-300'}
                                         />
 
                                         <div className="flex items-center justify-between col-span-2">
@@ -851,6 +950,7 @@ export default function CreateEventPage() {
                                             placeholder="Discount Code (e.g., KOTHUFESTSALE)"
                                             value={code.code}
                                             onChange={(e) => updateCode(index, 'code', e.target.value)}
+                                            className={isDiscountCodeFieldMissing(code, 'code') ? 'border-red-500' : 'border-gray-300'}
                                         />
 
                                         {/* Ticket tier checkboxes */}
@@ -902,6 +1002,7 @@ export default function CreateEventPage() {
                                                 placeholder="Max Uses"
                                                 value={code.maxUses}
                                                 onChange={(e) => updateCode(index, 'maxUses', e.target.value)}
+                                                className={isDiscountCodeFieldMissing(code, 'maxUses') ? 'border-red-500' : 'border-gray-300'}
                                             />
 
                                             <div className="flex gap-2 items-center">
@@ -910,9 +1011,10 @@ export default function CreateEventPage() {
                                                     placeholder="Discount Amount"
                                                     value={code.discountAmount}
                                                     onChange={(e) => updateCode(index, 'discountAmount', e.target.value)}
+                                                    className={isDiscountCodeFieldMissing(code, 'discountAmount') ? 'border-red-500' : 'border-gray-300'}
                                                 />
                                                 <select
-                                                    className="border rounded px-2 py-1 text-sm"
+                                                    className={`border rounded px-2 py-1 text-sm ${isDiscountCodeFieldMissing(code, 'discountType') ? 'border-red-500' : 'border-gray-300'}`}
                                                     value={code.discountType}
                                                     onChange={(e) => updateCode(index, 'discountType', e.target.value)}
                                                 >
@@ -928,11 +1030,13 @@ export default function CreateEventPage() {
                                                 type="date"
                                                 value={code.startDate}
                                                 onChange={(e) => updateCode(index, 'startDate', e.target.value)}
+                                                className={isDiscountCodeFieldMissing(code, 'startDate') ? 'border-red-500' : 'border-gray-300'}
                                             />
                                             <Input
                                                 type="date"
                                                 value={code.endDate}
                                                 onChange={(e) => updateCode(index, 'endDate', e.target.value)}
+                                                className={isDiscountCodeFieldMissing(code, 'endDate') ? 'border-red-500' : 'border-gray-300'}
                                             />
                                         </div>
                                     </div>
@@ -960,6 +1064,7 @@ export default function CreateEventPage() {
                                 <Select
                                     value={policy.refundPolicy}
                                     onChange={(value) => updatePolicy('refundPolicy', value)}
+                                    error={formSubmitted && !policy.refundPolicy}
                                 >
                                     <SelectTrigger>{policy.refundPolicy || 'Refund Policy'}</SelectTrigger>
                                     <SelectContent>
@@ -975,11 +1080,16 @@ export default function CreateEventPage() {
                                     placeholder="Refund Policy (optional)"
                                     value={policy.refundDetails}
                                     onChange={(e) => updatePolicy('refundDetails', e.target.value)}
+                                    className="border-gray-300"
                                 />
 
-                                <Select>
-                                    <h3 className="mb-1">Listing Visibility<span className="text-red-500">*</span></h3>
-                                    <SelectTrigger>Visibility</SelectTrigger>
+                                <Select
+                                    value={policy.visibility}
+                                    onChange={(value) => updatePolicy('visibility', value)}
+                                    error={formSubmitted && !policy.visibility}
+                                >
+                                    <h3 className="mb-1">Listing Visibility</h3>
+                                    <SelectTrigger>Visibility<span className="text-red-500">*</span></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="public">Public </SelectItem>
                                         <SelectItem value="private">Private</SelectItem>
@@ -998,38 +1108,35 @@ export default function CreateEventPage() {
                         <Card>
                             <CardContent className="grid gap-4 p-6">
                                 <h2 className="font-semibold text-xl">Email Contact</h2>
-                                <Input
-                                    type="email"
-                                    placeholder="Public Contact Email"
-                                    value={organizer.email || ''}
-                                    readOnly
-                                    className="cursor-not-allowed opacity-70"
-                                />
+                                <Input type="email" placeholder="Public Contact Email" />
                                 <h2 className="font-semibold text-xl">Social Media Handles</h2>
                                 <Input
                                     placeholder="Instagram"
                                     value={organizer.instagram}
                                     onChange={(e) => updateOrganizer('instagram', e.target.value)}
+                                    className="border-gray-300"
                                 />
                                 <Input
                                     placeholder="Facebook"
                                     value={organizer.facebook}
                                     onChange={(e) => updateOrganizer('facebook', e.target.value)}
+                                    className="border-gray-300"
                                 />
                                 <Input
                                     placeholder="Twitter"
                                     value={organizer.twitter}
                                     onChange={(e) => updateOrganizer('twitter', e.target.value)}
+                                    className="border-gray-300"
                                 />
                                 <h2 className="font-semibold text-xl">Phone Contact</h2>
                                 <Input type="number" placeholder="Phone Number" />
                             </CardContent>
                         </Card>
                         {formError && (
-                            <p className="text-red-500 text-sm mb-2">{formError}</p>
-                        )}
+                                <p className="text-red-500 text-sm mb-2">{formError}</p>
+                            )}
                         <div className='flex space-x-4 '>
-
+                           
                             <Button onClick={() => handleSubmit(false)}>Review</Button>
                         </div>
 
@@ -1039,6 +1146,8 @@ export default function CreateEventPage() {
 
 
             <Footer />
+
+
 
         </>
     );

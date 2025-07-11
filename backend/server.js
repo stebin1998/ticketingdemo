@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Event = require('./models/events');
 const User = require('./models/user');
+const TicketPurchase = require('./models/ticketPurchase');
 require('dotenv').config();
 const multer = require('multer');
 const path = require('path');
@@ -16,7 +17,7 @@ const admin = require('firebase-admin');
 // For local development, this uses Application Default Credentials (ADC)
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
+  admin.initializeApp({
       projectId: 'playmi-auth-demo', // Your Firebase project ID
       // For local development, Firebase will use default credentials
       // or you can set GOOGLE_APPLICATION_CREDENTIALS env variable
@@ -34,7 +35,8 @@ const PORT = process.env.PORT || 4556;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increased limit for base64 image uploads
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ==================== AUTHENTICATION MIDDLEWARE ====================
 
@@ -51,15 +53,15 @@ const verifyFirebaseToken = async (req, res, next) => {
         
         try {
             // Try to verify the token with Firebase Admin
-            const decodedToken = await admin.auth().verifyIdToken(token);
-            
-            // Add user info to request object
-            req.user = {
-                uid: decodedToken.uid,
-                email: decodedToken.email,
-                emailVerified: decodedToken.email_verified
-            };
-            
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        
+        // Add user info to request object
+        req.user = {
+            uid: decodedToken.uid,
+            email: decodedToken.email,
+            emailVerified: decodedToken.email_verified
+        };
+        
             console.log('Token verified for user:', decodedToken.email);
             next();
             
@@ -89,7 +91,7 @@ const verifyFirebaseToken = async (req, res, next) => {
                     
                     console.log('Token decoded with fallback method for user:', decodedToken.email);
                     console.log('Note: This is a development fallback. Configure Firebase Admin SDK properly for production!');
-                    next();
+        next();
                 } else {
                     throw new Error('Invalid token format');
                 }
@@ -184,12 +186,12 @@ const generateInvitationToken = () => {
 
 // Set up storage for multer
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
 });
 const upload = multer({ storage: storage });
 
@@ -208,13 +210,20 @@ app.post('/events', verifyFirebaseToken, attachUserRole, requireSeller, async (r
         console.log('Event settings:', req.body.eventSettings);
         console.log('Visibility:', req.body.eventSettings?.visibility);
         
+        // Add creator tracking to the event data
+        const eventData = {
+            ...req.body,
+            creatorUID: req.user.uid,
+            creatorId: req.user.mongoUser._id
+        };
+        
         // Generate invitation token for private events
         if (req.body.eventSettings && req.body.eventSettings.visibility === 'private') {
-            req.body.invitationToken = generateInvitationToken();
+            eventData.invitationToken = generateInvitationToken();
             console.log('Generated invitation token for private event');
         }
         
-        const newEvent = new Event(req.body);
+        const newEvent = new Event(eventData);
         const savedEvent = await newEvent.save();
         console.log('Event saved with ID:', savedEvent._id);
         console.log('Saved event visibility:', savedEvent.eventSettings?.visibility);
@@ -623,6 +632,342 @@ app.get('/auth/users', async (req, res) => {
     }
 });
 
-app.listen(4556, '::', () => {
-    console.log('Listening on IPv6 :: port 4556');
-  });
+// ==================== PROFILE ENDPOINTS (PHASE 2) ====================
+
+// Update user profile
+app.put('/auth/profile/:firebaseUID', verifyFirebaseToken, async (req, res) => {
+    try {
+        console.log('=== PROFILE UPDATE REQUEST ===');
+        const { firebaseUID } = req.params;
+        console.log('FirebaseUID from params:', firebaseUID);
+        console.log('Request body:', req.body);
+        console.log('Authenticated user UID:', req.user.uid);
+        
+        const { 
+            username,
+            bio,
+            location,
+            socialMedia,
+            displayName,
+            profilePicture,
+            bannerImage
+        } = req.body;
+        
+        // Verify user can only update their own profile
+        if (req.user.uid !== firebaseUID) {
+            console.log('ERROR: UID mismatch - user trying to update another profile');
+            return res.status(403).json({ error: 'You can only update your own profile' });
+        }
+        
+        const user = await User.findOne({ firebaseUID });
+        console.log('User found:', user ? 'YES' : 'NO');
+        if (!user) {
+            console.log('ERROR: User not found in database');
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Update profile fields
+        if (username !== undefined) {
+            // Check if username is already taken
+            if (username && username !== user.username) {
+                const existingUser = await User.findOne({ username });
+                if (existingUser) {
+                    return res.status(400).json({ error: 'Username already taken' });
+                }
+            }
+            user.username = username;
+        }
+        
+        if (bio !== undefined) user.bio = bio;
+        if (location !== undefined) user.location = location;
+        if (displayName !== undefined) user.displayName = displayName;
+        if (profilePicture !== undefined) user.profilePicture = profilePicture;
+        if (bannerImage !== undefined) user.bannerImage = bannerImage;
+        
+        // Update social media fields
+        if (socialMedia) {
+            user.socialMedia = { ...user.socialMedia, ...socialMedia };
+        }
+        
+        await user.save();
+        console.log('Profile updated successfully for user:', user.firebaseUID);
+        
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                id: user._id,
+                firebaseUID: user.firebaseUID,
+                email: user.email,
+                displayName: user.displayName,
+                username: user.username,
+                bio: user.bio,
+                location: user.location,
+                socialMedia: user.socialMedia,
+                role: user.role,
+                profilePicture: user.profilePicture,
+                bannerImage: user.bannerImage,
+                isActive: user.isActive,
+                followersCount: user.followersCount,
+                followingCount: user.followingCount
+            }
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        console.error('Error details:', error.stack);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get enhanced user profile (with all fields)
+app.get('/auth/profile/full/:firebaseUID', async (req, res) => {
+    try {
+        const { firebaseUID } = req.params;
+        
+        const user = await User.findOne({ firebaseUID });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({
+            id: user._id,
+            firebaseUID: user.firebaseUID,
+            email: user.email,
+            displayName: user.displayName,
+            username: user.username,
+            bio: user.bio,
+            location: user.location,
+            socialMedia: user.socialMedia,
+            role: user.role,
+            profilePicture: user.profilePicture,
+            bannerImage: user.bannerImage,
+            isActive: user.isActive,
+            lastLogin: user.lastLogin,
+            followersCount: user.followersCount,
+            followingCount: user.followingCount,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            // Include seller fields if user is a seller
+            ...(user.role === 'seller' && {
+                companyName: user.companyName,
+                website: user.website,
+                businessAddress: user.businessAddress,
+                contactNumber: user.contactNumber,
+                paymentInstitution: user.paymentInstitution
+            })
+        });
+    } catch (error) {
+        console.error('Error fetching enhanced user profile:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== EVENT PROFILE ENDPOINTS ====================
+
+// Get events created by a user (for sellers)
+app.get('/events/by-user/:firebaseUID', async (req, res) => {
+    try {
+        const { firebaseUID } = req.params;
+        const { status, limit = 10, page = 1 } = req.query;
+        
+        const query = { creatorUID: firebaseUID };
+        
+        // Filter by status if provided
+        if (status) {
+            query['eventSettings.publishStatus'] = status;
+        }
+        
+        const skip = (page - 1) * limit;
+        
+        const events = await Event.find(query)
+            .populate('creatorId', 'displayName username profilePicture')
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .skip(skip);
+        
+        const totalCount = await Event.countDocuments(query);
+        
+        res.json({
+            events,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount,
+                hasNext: page < Math.ceil(totalCount / limit),
+                hasPrev: page > 1
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching user events:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get events purchased by a user (for buyers)
+app.get('/events/purchased/:firebaseUID', async (req, res) => {
+    try {
+        const { firebaseUID } = req.params;
+        const { timeframe = 'all', limit = 10, page = 1 } = req.query;
+        
+        const query = { buyerUID: firebaseUID, status: 'confirmed' };
+        
+        const skip = (page - 1) * limit;
+        
+        // Get ticket purchases first
+        const purchases = await TicketPurchase.find(query)
+            .populate({
+                path: 'eventId',
+                populate: {
+                    path: 'creatorId',
+                    select: 'displayName username profilePicture'
+                }
+            })
+            .sort({ purchaseDate: -1 })
+            .limit(parseInt(limit))
+            .skip(skip);
+        
+        // Categorize events by time
+        const now = new Date();
+        const categorizedEvents = {
+            upcoming: [],
+            past: [],
+            all: []
+        };
+        
+        purchases.forEach(purchase => {
+            const event = purchase.eventId;
+            if (!event) return;
+            
+            // Determine if event is upcoming or past
+            const eventDate = event.dateTimes?.singleStartDate || 
+                             event.dateTimes?.eventSlots?.[0]?.startDate;
+            
+            const eventData = {
+                ...event.toObject(),
+                ticketPurchase: {
+                    purchaseDate: purchase.purchaseDate,
+                    quantity: purchase.quantity,
+                    totalAmount: purchase.totalAmount,
+                    ticketTierName: purchase.ticketTierName
+                }
+            };
+            
+            categorizedEvents.all.push(eventData);
+            
+            if (eventDate && new Date(eventDate) > now) {
+                categorizedEvents.upcoming.push(eventData);
+            } else {
+                categorizedEvents.past.push(eventData);
+            }
+        });
+        
+        const totalCount = await TicketPurchase.countDocuments(query);
+        
+        let responseEvents = categorizedEvents.all;
+        if (timeframe === 'upcoming') {
+            responseEvents = categorizedEvents.upcoming;
+        } else if (timeframe === 'past') {
+            responseEvents = categorizedEvents.past;
+        }
+        
+        res.json({
+            events: responseEvents,
+            categorized: {
+                upcoming: categorizedEvents.upcoming.length,
+                past: categorizedEvents.past.length,
+                total: categorizedEvents.all.length
+            },
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount,
+                hasNext: page < Math.ceil(totalCount / limit),
+                hasPrev: page > 1
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching purchased events:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== TICKET PURCHASE ENDPOINTS ====================
+
+// Purchase tickets (for testing - in production this would integrate with payment processing)
+app.post('/tickets/purchase', verifyFirebaseToken, attachUserRole, async (req, res) => {
+    try {
+        const {
+            eventId,
+            ticketTierName,
+            quantity,
+            pricePerTicket
+        } = req.body;
+        
+        // Verify event exists
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        
+        // Find the ticket tier
+        const ticketTier = event.ticketTiers.find(tier => tier.name === ticketTierName);
+        if (!ticketTier) {
+            return res.status(404).json({ error: 'Ticket tier not found' });
+        }
+        
+        // Check availability
+        if (ticketTier.quantity < quantity) {
+            return res.status(400).json({ error: 'Not enough tickets available' });
+        }
+        
+        // Calculate total
+        const totalAmount = pricePerTicket * quantity;
+        
+        // Generate ticket codes
+        const ticketCodes = [];
+        for (let i = 0; i < quantity; i++) {
+            ticketCodes.push({
+                code: `TICKET-${Date.now()}-${i + 1}`,
+                used: false
+            });
+        }
+        
+        // Create ticket purchase
+        const purchase = new TicketPurchase({
+            buyerUID: req.user.uid,
+            buyerId: req.user.mongoUser._id,
+            eventId,
+            ticketTierName,
+            ticketTierType: ticketTier.type,
+            quantity,
+            pricePerTicket,
+            totalAmount,
+            paymentMethod: ticketTier.type === 'free' ? 'free' : 'credit_card',
+            ticketCodes,
+            status: 'confirmed'
+        });
+        
+        await purchase.save();
+        
+        // Update ticket tier quantity
+        ticketTier.quantity -= quantity;
+        await event.save();
+        
+        res.status(201).json({
+            message: 'Tickets purchased successfully',
+            purchase: {
+                id: purchase._id,
+                eventId,
+                ticketTierName,
+                quantity,
+                totalAmount,
+                purchaseDate: purchase.purchaseDate,
+                ticketCodes: purchase.ticketCodes
+            }
+        });
+    } catch (error) {
+        console.error('Error purchasing tickets:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

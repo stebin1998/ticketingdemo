@@ -14,7 +14,6 @@ import { useMemo } from 'react';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import AuthService from '../utils/authService';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function CreateEventPage() {
     const navigate = useNavigate();

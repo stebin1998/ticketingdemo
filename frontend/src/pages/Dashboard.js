@@ -28,6 +28,11 @@ const Dashboard = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    
+    // Ticket purchase modal states
+    const [modalView, setModalView] = useState('details'); // 'details' or 'tickets'
+    const [ticketQuantities, setTicketQuantities] = useState({});
+    const [cartItems, setCartItems] = useState([]);
 
     const MAX_LENGTH = 200;
 
@@ -39,6 +44,50 @@ const Dashboard = () => {
     const closeModal = () => {
         setSelectedEvent(null);
         setIsModalOpen(false);
+        setModalView('details');
+        setTicketQuantities({});
+        setCartItems([]);
+    };
+
+    const switchToTicketView = () => {
+        setModalView('tickets');
+    };
+
+    const switchToDetailsView = () => {
+        setModalView('details');
+    };
+
+    const handleTicketQuantityChange = (tierIndex, quantity) => {
+        setTicketQuantities(prev => ({
+            ...prev,
+            [tierIndex]: Math.max(0, parseInt(quantity) || 0)
+        }));
+    };
+
+    const addToCart = (tierIndex) => {
+        const tier = selectedEvent.ticketTiers[tierIndex];
+        const quantity = ticketQuantities[tierIndex] || 0;
+        
+        if (quantity > 0) {
+            setCartItems(prev => [...prev, {
+                tierIndex,
+                tierName: tier.name,
+                quantity,
+                price: tier.price,
+                total: quantity * tier.price
+            }]);
+            alert(`Added ${quantity} ${tier.name} ticket(s) to cart!`);
+        }
+    };
+
+    const handleProceedToCart = () => {
+        const totalItems = Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
+        if (totalItems > 0) {
+            alert(`Proceeding to checkout with ${totalItems} ticket(s)!`);
+            closeModal();
+        } else {
+            alert("Please select at least one ticket to proceed.");
+        }
     };
 
     useEffect(() => {
@@ -354,11 +403,13 @@ const Dashboard = () => {
 
                         {/* Modal Content Scrollable */}
                         <div className="p-6 overflow-y-auto flex-1">
-                            
-                            {/* Title */}
-                            <h2 className="text-3xl font-extrabold text-ticketmi-primary leading-tight mb-4 break-words max-w-full sm:max-w-[55%]">
-                                {selectedEvent.title}
-                            </h2>
+                            {modalView === 'details' ? (
+                                // Event Details View
+                                <div>
+                                    {/* Title */}
+                                    <h2 className="text-3xl font-extrabold text-ticketmi-primary leading-tight mb-4 break-words max-w-full sm:max-w-[55%]">
+                                        {selectedEvent.title}
+                                    </h2>
 
                             {/* Description */}
                             {selectedEvent.description && (
@@ -516,6 +567,75 @@ const Dashboard = () => {
                                     </p>
                                 </div>
                             )}
+                                </div>
+                            ) : (
+                                // Ticket Selection View
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-2xl font-bold text-gray-800">Select Tickets</h2>
+                                        <button
+                                            onClick={switchToDetailsView}
+                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                        >
+                                            ← Back to Details
+                                        </button>
+                                    </div>
+                                    
+                                    {selectedEvent.ticketTiers?.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {selectedEvent.ticketTiers
+                                                .filter(tier => tier.active && tier.public)
+                                                .map((tier, index) => (
+                                                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div>
+                                                            <h3 className="font-semibold text-lg text-gray-800">{tier.name}</h3>
+                                                            <p className="text-sm text-gray-600">{tier.description}</p>
+                                                            <p className="text-lg font-bold text-green-600 mt-1">${tier.price}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleTicketQuantityChange(index, (ticketQuantities[index] || 0) - 1)}
+                                                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <span className="w-8 text-center font-medium">
+                                                                {ticketQuantities[index] || 0}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => handleTicketQuantityChange(index, (ticketQuantities[index] || 0) + 1)}
+                                                                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="text-sm text-gray-500">
+                                                            {tier.quantity} tickets available
+                                                        </p>
+                                                        <button
+                                                            onClick={() => addToCart(index)}
+                                                            disabled={!ticketQuantities[index]}
+                                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                                                                ticketQuantities[index] 
+                                                                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            }`}
+                                                        >
+                                                            Add to Cart
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-gray-500 py-8">No tickets available for this event.</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
 
@@ -533,15 +653,21 @@ const Dashboard = () => {
                                 </button>
 
                                 {/* Checkout Button */}
-                                <button
-                                    className="flex-1 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 px-4 rounded-lg shadow-lg hover:from-green-600 hover:to-green-800 transition text-sm font-semibold"
-                                    onClick={() => {
-                                        alert("Proceeding to checkout flow 🚀");
-                                        closeModal();
-                                    }}
-                                >
-                                    Grab your ticket now from just <strong>${lowestPrice.toFixed(2)}</strong>!
-                                </button>
+                                {modalView === 'details' ? (
+                                    <button
+                                        className="flex-1 bg-gradient-to-r from-green-500 to-green-700 text-white py-3 px-4 rounded-lg shadow-lg hover:from-green-600 hover:to-green-800 transition text-sm font-semibold"
+                                        onClick={switchToTicketView}
+                                    >
+                                        Grab your ticket now from just <strong>${lowestPrice.toFixed(2)}</strong>!
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white py-3 px-4 rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-800 transition text-sm font-semibold"
+                                        onClick={handleProceedToCart}
+                                    >
+                                        Proceed to Cart ({Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0)} tickets)
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

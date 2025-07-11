@@ -55,6 +55,8 @@ const eventSettingsSchema = new mongoose.Schema({
 });
 
 const organizerContactSchema = new mongoose.Schema({
+  email: { type: String },
+  phone: { type: String },
   instagram: { type: String },
   facebook: { type: String },
   twitter: { type: String },
@@ -80,6 +82,17 @@ const eventSchema = new mongoose.Schema({
   eventSettings: eventSettingsSchema,
   organizerContact: organizerContactSchema,
   invitationToken: { type: String, unique: true, sparse: true },
+  
+  // Creator tracking (Phase 1)
+  creatorUID: {
+    type: String,
+    required: true // Firebase UID of the event creator
+  },
+  creatorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true // MongoDB User ID of the creator
+  },
 }, {
   timestamps: true,
 });

@@ -27,7 +27,7 @@ const Login = () => {
 
     const handleEmailLogin = async (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
+            e.preventDefault();            
             await handleLogin();
         }
     };
@@ -45,8 +45,8 @@ const Login = () => {
             
             // Set flag to navigate after auth state is ready
             setShouldNavigateAfterLogin(true);
-        } catch (err) {
-            alert(err.message);
+            } catch (err) {
+                alert(err.message);
             setLoading(false);
         }
     };

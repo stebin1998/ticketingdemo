@@ -12,11 +12,9 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/
 import { useEffect } from 'react';
 import { useMemo } from 'react';
 import Footer from '../components/Footer';
-import { useNavigate } from 'react-router-dom';
 import AuthService from '../utils/authService';
 
 export default function CreateEventPage() {
-    const navigate = useNavigate();
 
     // Event Details
     const [details, setDetails] = useState({
@@ -82,7 +80,7 @@ export default function CreateEventPage() {
     const [tiers, setTiers] = useState([
         {
             name: '',
-            type: 'free',
+            type: '',
             price: '',
             quantity: '',
             description: '',
@@ -101,7 +99,7 @@ export default function CreateEventPage() {
     };
 
     const addTier = () => {
-        setTiers([...tiers, { name: '', type: 'free', price: '', quantity: '', description: '', active: true, public: true }]);
+        setTiers([...tiers, { name: '', type: '', price: '', quantity: '', description: '', active: true, public: true }]);
     };
 
     // Discount Codes
@@ -243,12 +241,12 @@ export default function CreateEventPage() {
                 discountCodes: codes,
                 eventSettings: {
                     ...policy,
-                    publishStatus: 'draft' ,
+                    publishStatus: draft ? 'draft' : 'published',
                 },
                 organizerContact: organizer,
             };
 
-
+            console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
             const response = await AuthService.makeAuthenticatedRequest('http://localhost:4556/events', {
                 method: 'POST',
@@ -275,13 +273,7 @@ export default function CreateEventPage() {
                 return; // Don't show success message if we're handling upgrade
             }
 
-
-
-            const createdEvent = await response.json();
-
-
-            navigate(`/event-results/${createdEvent._id}`);
-
+            alert(draft ? 'Draft saved successfully!' : 'Event submitted successfully!');
         } catch (error) {
             alert(error.message);
         }
@@ -632,13 +624,7 @@ export default function CreateEventPage() {
                                             value={tier.type}
                                             onChange={(value) => updateTier(index, 'type', value)}
                                         >
-                                            <SelectTrigger>
-                                                {tier.type ? (
-                                                    tier.type === 'free' ? 'Free' :
-                                                    tier.type === 'paid' ? 'Paid' :
-                                                    tier.type === 'donation' ? 'Donation' : 'Ticket Type'
-                                                ) : 'Ticket Type'}
-                                            </SelectTrigger>
+                                            <SelectTrigger>Ticket Type</SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="free">Free</SelectItem>
                                                 <SelectItem value="paid">Paid</SelectItem>
@@ -897,7 +883,16 @@ export default function CreateEventPage() {
                                     </SelectContent>
                                 </Select>
 
-
+                                <Select
+                                    value={policy.status}
+                                    onValueChange={(value) => updatePolicy('status', value)}
+                                >
+                                    <SelectTrigger>{policy.status}</SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="draft">Draft</SelectItem>
+                                        <SelectItem value="published">Published</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </CardContent>
                         </Card>
                         <h1 id="organizer-contact" className="text-2xl font-bold">Organizer Contact</h1>
@@ -931,8 +926,10 @@ export default function CreateEventPage() {
                             </CardContent>
                         </Card>
                         <div className='flex space-x-4 '>
-                           
-                            <Button onClick={() => handleSubmit(false)}>Review</Button>
+                            <Button variant="secondary" onClick={() => handleSubmit(true)}>
+                                Save Draft
+                            </Button>
+                            <Button onClick={() => handleSubmit(false)}>Submit</Button>
                         </div>
 
                     </div>

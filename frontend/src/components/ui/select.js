@@ -1,57 +1,78 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
-const SelectContext = createContext();
+export const Select = ({ children, value, onChange, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
 
-export const Select = ({ children, onChange }) => {
-  const [selected, setSelected] = useState('');
-  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
 
-  const handleSelect = (value) => {
-    setSelected(value);
-    setOpen(false);
-    if (onChange) onChange(value);
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const childrenArray = React.Children.toArray(children);
+  const trigger = childrenArray.find(child => child.type === SelectTrigger);
+  const content = childrenArray.find(child => child.type === SelectContent);
 
   return (
-    <SelectContext.Provider value={{ selected, open, setOpen, handleSelect }}>
-      <div className="relative">{children}</div>
-    </SelectContext.Provider>
+    <div ref={selectRef} className={`relative ${className}`}>
+      {React.cloneElement(trigger, {
+        onClick: () => setIsOpen(!isOpen),
+        isOpen
+      })}
+      {isOpen && React.cloneElement(content, {
+        onSelect: (selectedValue) => {
+          onChange(selectedValue);
+          setIsOpen(false);
+        }
+      })}
+    </div>
   );
 };
 
-export const SelectTrigger = () => {
-  const { selected, open, setOpen } = useContext(SelectContext);
+export const SelectTrigger = ({ children, onClick, isOpen, className = "" }) => {
   return (
-    <div
-      onClick={() => setOpen(!open)}
-      className="border rounded px-3 py-2 bg-white cursor-pointer flex items-center justify-between"
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full px-3 py-2 text-left border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex justify-between items-center ${className}`}
     >
-      <span className="text-gray-500 text-sm">{selected || 'Select an option'}</span>
-      <span className="ml-2 text-gray-500">{open ? '▲' : '▼'}</span>
+      <span>{children}</span>
+      <svg
+        className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  );
+};
+
+export const SelectContent = ({ children, onSelect, className = "" }) => {
+  return (
+    <div className={`absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto ${className}`}>
+      {React.Children.map(children, child =>
+        React.cloneElement(child, { onSelect })
+      )}
     </div>
   );
 };
-SelectTrigger.displayName = 'SelectTrigger';
 
-export const SelectContent = ({ children }) => {
-  const { open } = useContext(SelectContext);
-  return open ? (
-    <div className="absolute mt-1 bg-white border rounded shadow z-10 w-full">
-      {children}
-    </div>
-  ) : null;
-};
-SelectContent.displayName = 'SelectContent';
-
-export const SelectItem = ({ value, children }) => {
-  const { handleSelect } = useContext(SelectContext);
+export const SelectItem = ({ children, value, onSelect, className = "" }) => {
   return (
-    <div
-      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-      onClick={() => handleSelect(value)}
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={`w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ${className}`}
     >
       {children}
-    </div>
+    </button>
   );
-};
-SelectItem.displayName = 'SelectItem';
+}; 

@@ -22,7 +22,6 @@ const Header = ({ searchQuery, onSearchChange, locationFilter, onLocationChange 
   const options = ["All Locations", "Toronto", "Vancouver", "Montreal"];
   const { isAuthenticated, logout, userInfo, profile, canCreateEvents } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
 
   const navigate = useNavigate();

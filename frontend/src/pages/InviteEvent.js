@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-    faArrowLeft, 
-    faExclamationTriangle, 
-    faCalendarAlt, 
-    faMapMarkerAlt, 
-    faHeart, 
-    faArrowUpRightFromSquare,
-    faBookmark
+import {
+    faCalendarAlt, faMapMarkerAlt,
+    faExclamationCircle, faHeart, faArrowUpRightFromSquare, faBookmark
 } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/TicketMiLogo-H.png';
 
@@ -119,7 +114,7 @@ const InviteEvent = () => {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="text-center max-w-md mx-4">
-                    <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-500 text-4xl mb-4" />
+                    <FontAwesomeIcon icon={faExclamationCircle} className="text-red-500 text-4xl mb-4" />
                     <h2 className="text-xl font-bold text-gray-800 mb-2">Access Denied</h2>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button

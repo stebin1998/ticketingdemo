@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faSearch, faMapMarkerAlt, faPlus, faCalendarAlt, faTicketAlt,
+    faMapMarkerAlt, faCalendarAlt, faTicketAlt,
     faMusic, faPalette, faUtensils, faRunning, faFilm, faMicrophoneAlt,
-    faExclamationCircle, faImage, faHeart, faShare, faArrowUpRightFromSquare, faLocationArrow, faBookmark
+    faExclamationCircle, faImage, faBookmark
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -17,7 +17,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const Dashboard = () => {
     // Keep authentication logic from HEAD
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { loading: authLoading } = useAuth();
     
     // Enhanced state from teammate's version
     const [searchQuery, setSearchQuery] = useState('');
@@ -32,9 +32,6 @@ const Dashboard = () => {
     // Ticket purchase modal states
     const [modalView, setModalView] = useState('details'); // 'details' or 'tickets'
     const [ticketQuantities, setTicketQuantities] = useState({});
-    const [cartItems, setCartItems] = useState([]);
-
-    const MAX_LENGTH = 200;
 
     const openModal = (event) => {
         setSelectedEvent(event);
@@ -46,7 +43,6 @@ const Dashboard = () => {
         setIsModalOpen(false);
         setModalView('details');
         setTicketQuantities({});
-        setCartItems([]);
     };
 
     const switchToTicketView = () => {
@@ -69,13 +65,6 @@ const Dashboard = () => {
         const quantity = ticketQuantities[tierIndex] || 0;
         
         if (quantity > 0) {
-            setCartItems(prev => [...prev, {
-                tierIndex,
-                tierName: tier.name,
-                quantity,
-                price: tier.price,
-                total: quantity * tier.price
-            }]);
             alert(`Added ${quantity} ${tier.name} ticket(s) to cart!`);
         }
     };
@@ -218,14 +207,6 @@ const Dashboard = () => {
 
         lowestPrice = prices[0] || 0;
     }
-
-    const shouldTruncate = selectedEvent?.description?.length > MAX_LENGTH;
-    const displayedDescription =
-        selectedEvent?.description
-            ? isExpanded || !shouldTruncate
-                ? selectedEvent.description
-                : selectedEvent.description.slice(0, MAX_LENGTH) + '...'
-            : '';
 
     useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -385,14 +366,7 @@ const Dashboard = () => {
                             <div className="absolute bottom-2 right-5 flex space-x-4">
                                 <div className="bg-black bg-opacity-50 rounded-full p-2 cursor-pointer hover:bg-red-600 transition">
                                     <FontAwesomeIcon
-                                        icon={faHeart}
-                                        size="lg"
-                                        className="text-white"
-                                    />
-                                </div>
-                                <div className="bg-black bg-opacity-50 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition">
-                                    <FontAwesomeIcon
-                                        icon={faArrowUpRightFromSquare}
+                                        icon={faBookmark}
                                         size="lg"
                                         className="text-white"
                                     />

@@ -214,6 +214,9 @@ const Profile = () => {
       try {
         setIsLoading(true);
         
+        // Add small delay to prevent overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Fetch profile data
         const profileResponse = await fetch(`http://localhost:4556/auth/profile/full/${currentUser.uid}`);
         let profileData = null;

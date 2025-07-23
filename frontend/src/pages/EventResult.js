@@ -29,7 +29,7 @@ const EventResults = () => {
                     console.log('No authentication token available, proceeding without auth');
                 }
                 
-                const res = await fetch(`http://localhost:4556/events/${eventId}`, {
+                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/events/${eventId}`, {
                     headers
                 });
                 
@@ -80,7 +80,7 @@ const EventResults = () => {
                 console.log('No authentication token available for publish');
             }
             
-            const response = await fetch(`http://localhost:4556/events/${event._id}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/events/${event._id}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({

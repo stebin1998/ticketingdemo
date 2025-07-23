@@ -339,20 +339,20 @@ export default function CreateEventPage() {
 
 
 
-            const response = await AuthService.makeAuthenticatedRequest('http://localhost:4556/events', {
+            const response = await AuthService.makeAuthenticatedRequest(`${process.env.REACT_APP_API_BASE_URL}/events`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Failed to save event.' }));
-
+                
                 // Handle seller upgrade needed
                 if (errorData.code === 'UPGRADE_TO_SELLER_NEEDED') {
                     const userChoice = window.confirm(
                         `${errorData.message}\n\nWould you like to become a seller now?`
                     );
-
+                    
                     if (userChoice) {
                         // Redirect to seller signup with current user's email
                         window.location.href = `/seller-signup?email=${encodeURIComponent(errorData.userInfo?.email || '')}`;
@@ -404,7 +404,7 @@ export default function CreateEventPage() {
           return !policy.refundPolicy || !policy.visibility;
         default:
           return false;
-      }
+        }
     };
 
 
@@ -452,17 +452,17 @@ export default function CreateEventPage() {
                                 {sections.map((section, idx) => {
                                     const hasErrors = formSubmitted && getSectionErrors(section.id);
                                     return (
-                                        <a
-                                            key={section.id}
-                                            href={`#${section.id}`}
-                                            onClick={(e) => {
-                                                e.preventDefault(); // prevent default jump
-                                                const el = document.getElementById(section.id);
-                                                if (el) {
-                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' }); // smooth scroll
-                                                    setActiveSection(section.id); // update active state immediately
-                                                }
-                                            }}
+                                    <a
+                                        key={section.id}
+                                        href={`#${section.id}`}
+                                        onClick={(e) => {
+                                            e.preventDefault(); // prevent default jump
+                                            const el = document.getElementById(section.id);
+                                            if (el) {
+                                                el.scrollIntoView({ behavior: 'smooth', block: 'start' }); // smooth scroll
+                                                setActiveSection(section.id); // update active state immediately
+                                            }
+                                        }}
                                             className={`group flex items-center gap-4 transition-colors duration-300 ${
                                                 activeSection === section.id 
                                                   ? hasErrors 
@@ -472,8 +472,8 @@ export default function CreateEventPage() {
                                                     ? 'text-red-500' 
                                                     : 'text-gray-600'
                                             }`}
-                                        >
-                                            <div
+                                    >
+                                        <div
                                                 className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${
                                                     activeSection === section.id 
                                                       ? hasErrors 
@@ -483,14 +483,14 @@ export default function CreateEventPage() {
                                                         ? 'bg-red-100 border-red-500' 
                                                         : 'bg-white border-gray-400'
                                                 }`}
-                                            ></div>
+                                        ></div>
                                             <span className="group-hover:underline flex items-center gap-2">
                                                 {section.label}
                                                 {hasErrors && (
                                                     <span className="text-red-500 text-xs">-</span>
                                                 )}
                                             </span>
-                                        </a>
+                                    </a>
                                     );
                                 })}
                             </div>

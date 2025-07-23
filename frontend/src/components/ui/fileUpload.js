@@ -13,7 +13,7 @@ const FileUpload = ({ onUpload, className = "", hasError = false }) => {
     setUploading(true);
     try {
       const token = await AuthService.getAuthToken();
-      const response = await fetch('http://localhost:4556/upload', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -121,3 +121,4 @@ const FileUpload = ({ onUpload, className = "", hasError = false }) => {
 };
 
 export default FileUpload;
+ 

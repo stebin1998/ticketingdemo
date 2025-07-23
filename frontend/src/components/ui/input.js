@@ -12,3 +12,4 @@ export const Input = ({ placeholder, value, onChange, type = "text", className =
     />
   );
 };
+ 

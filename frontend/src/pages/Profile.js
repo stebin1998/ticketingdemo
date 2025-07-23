@@ -218,7 +218,7 @@ const Profile = () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Fetch profile data
-        const profileResponse = await fetch(`http://localhost:4556/auth/profile/full/${currentUser.uid}`);
+        const profileResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/profile/full/${currentUser.uid}`);
         let profileData = null;
         
         if (profileResponse.ok) {
@@ -233,9 +233,9 @@ const Profile = () => {
           let eventsUrl;
           
           if (userProfile.role === 'seller' || userProfile.role === 'admin') {
-            eventsUrl = `http://localhost:4556/events/by-user/${currentUser.uid}`;
+            eventsUrl = `${process.env.REACT_APP_API_BASE_URL}/events/by-user/${currentUser.uid}`;
           } else {
-            eventsUrl = `http://localhost:4556/events/purchased/${currentUser.uid}`;
+            eventsUrl = `${process.env.REACT_APP_API_BASE_URL}/events/purchased/${currentUser.uid}`;
           }
           
           const eventsResponse = await fetch(eventsUrl);
@@ -278,7 +278,7 @@ const Profile = () => {
       const token = await currentUser.getIdToken();
       console.log('Firebase token obtained, making request...');
       
-      const response = await fetch(`http://localhost:4556/auth/profile/${currentUser.uid}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/profile/${currentUser.uid}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ const Profile = () => {
         
         const token = await currentUser.getIdToken();
         
-        const response = await fetch(`http://localhost:4556/auth/profile/${currentUser.uid}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/profile/${currentUser.uid}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

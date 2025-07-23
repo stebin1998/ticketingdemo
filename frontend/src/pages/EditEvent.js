@@ -10,7 +10,7 @@ const EditEvent = () => {
         const fetchData = async () => {
             try {
                 const [eventRes] = await Promise.all([
-                    fetch(`http://localhost:4556/events/${eventId}`),
+                    fetch(`${process.env.REACT_APP_API_BASE_URL}/events/${eventId}`),
 
                 ]);
 
@@ -63,7 +63,7 @@ const EditEvent = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:4556/events/${eventId}`, {
+            const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/events/${eventId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(event),

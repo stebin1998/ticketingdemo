@@ -28,7 +28,7 @@ const MyEvents = () => {
             setLoading(true);
             try {
                 console.log("Fetching events for:", user.email);
-                const response = await fetch(`http://localhost:4556/events?organizerEmail=${encodeURIComponent(user.email)}`);
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/events?organizerEmail=${encodeURIComponent(user.email)}`);
                 if (!response.ok) throw new Error('Failed to fetch events');
                 const data = await response.json();
 

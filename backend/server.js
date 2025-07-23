@@ -15,19 +15,21 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin with project ID
 // For local development, this uses Application Default Credentials (ADC)
-if (!admin.apps.length) {
-  try {
-  admin.initializeApp({
-      projectId: 'playmi-auth-demo', // Your Firebase project ID
-      // For local development, Firebase will use default credentials
-      // or you can set GOOGLE_APPLICATION_CREDENTIALS env variable
-    });
-    console.log('Firebase Admin initialized successfully');
-  } catch (error) {
-    console.error('Firebase Admin initialization failed:', error);
-    // For development, create a simpler token verification that accepts any valid Firebase token
-    console.log('Using fallback authentication for development');
+let firebaseInitialized = false;
+try {
+  if (!admin.apps.length) {
+    admin.initializeApp({
+        projectId: 'playmi-auth-demo', // Your Firebase project ID
+        // For local development, Firebase will use default credentials
+        // or you can set GOOGLE_APPLICATION_CREDENTIALS env variable
+      });
+      console.log('Firebase Admin initialized successfully');
+      firebaseInitialized = true;
   }
+} catch (error) {
+  console.error('Firebase Admin initialization failed:', error);
+  console.log('Continuing without Firebase Admin - using fallback authentication');
+  firebaseInitialized = false;
 }
 
 const app = express();
@@ -172,12 +174,19 @@ const requireAdmin = (req, res, next) => {
 };
 
 // Debug print for MONGO_URI
-console.log('MONGO_URI:', process.env.MONGO_URI);
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'Set' : 'Not set');
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error(err));
+if (!process.env.MONGO_URI) {
+    console.error('MONGO_URI environment variable is not set!');
+} else {
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log('MongoDB connected successfully'))
+        .catch(err => {
+            console.error('MongoDB connection failed:', err);
+            console.error('Server will continue running but database operations will fail');
+        });
+}
 
 // Generate secure invitation token
 const generateInvitationToken = () => {
@@ -185,18 +194,13 @@ const generateInvitationToken = () => {
 };
 
 // Set up storage for multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
+// Note: Vercel serverless functions can't write to disk
+// This is disabled for Vercel deployment
+const storage = multer.memoryStorage(); // Use memory storage for Vercel
 const upload = multer({ storage: storage });
 
-// Serve uploads folder statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Note: Static file serving disabled on Vercel (serverless environment)
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Sample Route
 app.get('/', (req, res) => {
@@ -432,13 +436,17 @@ app.patch('/events/:id', async (req, res) => {
 });
 
 // Image upload endpoint
+// Note: Disabled for Vercel deployment (serverless can't write to disk)
 app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  // Return the URL to the uploaded file
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl });
+  // For Vercel: You would typically upload to cloud storage (S3, Cloudinary, etc.)
+  // For now, return a placeholder response
+  res.status(501).json({ 
+    error: 'File upload not implemented for serverless deployment',
+    message: 'Use cloud storage service like Cloudinary or AWS S3'
+  });
 });
 
 // ==================== AUTHENTICATION ROUTES ====================

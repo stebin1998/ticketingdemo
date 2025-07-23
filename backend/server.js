@@ -970,4 +970,11 @@ app.post('/tickets/purchase', verifyFirebaseToken, attachUserRole, async (req, r
     }
 });
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+// Start server locally or export for Vercel
+if (require.main === module) {
+    // Local development
+    app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+} else {
+    // Vercel deployment
+    module.exports = app;
+}

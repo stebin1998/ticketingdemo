@@ -203,6 +203,16 @@ app.get('/', (req, res) => {
     res.send('API is running');
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        message: 'Backend API is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
 // Create an event (protected - requires seller account)
 app.post('/events', verifyFirebaseToken, attachUserRole, requireSeller, async (req, res) => {
     try {
